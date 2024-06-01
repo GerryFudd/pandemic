@@ -8,7 +8,8 @@ namespace gerryfudd::types {
     std::map<disease::DiseaseColor, disease::DiseaseStatus> diseases;
   public:
     Game();
-    disease::DiseaseStatus lookup_disease(disease::DiseaseColor);
+    int get_reserve(disease::DiseaseColor);
+    bool is_cured(disease::DiseaseColor);
   };
 }
 

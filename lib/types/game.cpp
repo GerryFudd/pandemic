@@ -9,7 +9,11 @@ namespace gerryfudd::types {
     diseases[disease::DiseaseColor::yellow] = disease::DiseaseStatus();
   }
 
-  disease::DiseaseStatus Game::lookup_disease(disease::DiseaseColor disease_color) {
-    return diseases[disease_color];
+  int Game::get_reserve(disease::DiseaseColor disease_color) {
+    return diseases[disease_color].get_reserve();
+  }
+
+  bool Game::is_cured(disease::DiseaseColor disease_color) {
+    return diseases[disease_color].is_cured();
   }
 }
