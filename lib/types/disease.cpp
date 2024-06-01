@@ -1,6 +1,21 @@
 #include <types/disease.hpp>
 
 namespace gerryfudd::types::disease {
+  const char *name_of(DiseaseColor color) {
+    switch (color)
+    {
+    case DiseaseColor::black:
+      return "black";
+    case DiseaseColor::blue:
+      return "blue";
+    case DiseaseColor::red:
+      return "red";
+    case DiseaseColor::yellow:
+      return "yellow";
+      default:
+      throw "No color name.";
+    }
+  }
   DiseaseStatus::DiseaseStatus(): reserve{DISEASE_RESERVE}, cured{false} {}
 
   int DiseaseStatus::get_reserve() {

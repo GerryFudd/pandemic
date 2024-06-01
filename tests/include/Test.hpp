@@ -3,12 +3,13 @@
 #define STACK_TRACE_CAPACITY 20
 #include <iostream>
 #include <exception>
+#include <vector>
 
 namespace gerryfudd {
     namespace test {
         class AssertionFailure: public std::exception {
-                const char* message;
-                char* trace;
+                std::string message;
+                std::vector<std::string> trace;
             public:
                 AssertionFailure(std::string);
                 AssertionFailure(const char*);
@@ -17,15 +18,15 @@ namespace gerryfudd {
         };
 
         class Test {
-            const char * filename;
+            std::string filename;
             int line;
-            const char * name;
+            std::string name;
             void (*exec)();
         public:
             Test();
             Test(const char*, int, const char *, void (*exec)());
             bool run(unsigned short,std::ostream&,std::ostream&);
-            const char * get_filename(void);
+            std::string get_filename(void);
             int get_line(void);
         };
 

@@ -31,7 +31,7 @@ namespace gerryfudd::test {
       if (pc == 0) {
         break;
       }
-      trace_captor << "    ";
+      trace_captor.str("");
 
       char sym[256];
       if (unw_get_proc_name(&cursor, sym, sizeof(sym), &offset) == 0) {
@@ -45,23 +45,18 @@ namespace gerryfudd::test {
       } else {
         trace_captor << "-- error: unable to obtain symbol name for this frame";
       }
-      trace_captor << std::endl;
+      trace.push_back(trace_captor.str());
     }
-    char *text = new char[trace_captor.str().length() + 1];
-    for (int i = 0; i < trace_captor.str().length(); i++) {
-      text[i] = trace_captor.str()[i];
-    }
-    text[trace_captor.str().length()] = '\0';
-    trace = text;
-    trace_captor.clear();
   }
   const char* AssertionFailure::what() const _GLIBCXX_TXN_SAFE_DYN _GLIBCXX_NOTHROW {
-    return message;
+    return message.c_str();
   }
 
   std::ostream& operator<<(std::ostream& out, const AssertionFailure &e) {
     out << e.message << std::endl;
-    out << e.trace << std::endl;
+    for (std::vector<std::string>::const_iterator trace_line = e.trace.begin(); trace_line != e.trace.end(); trace_line++) {
+      out << "    " << *trace_line << std::endl;
+    }
     return out;
   }
 
@@ -82,7 +77,7 @@ namespace gerryfudd::test {
     return true;
   }
 
-  const char * Test::get_filename() {
+  std::string Test::get_filename() {
     return filename;
   }
 

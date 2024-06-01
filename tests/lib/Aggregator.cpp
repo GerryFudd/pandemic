@@ -6,20 +6,12 @@
 namespace gerryfudd::test {
   AggregationException::AggregationException(const char* message): message{message} {}
   const char* AggregationException::what() const _GLIBCXX_TXN_SAFE_DYN _GLIBCXX_NOTHROW {
-    return message;
+    return message.c_str();
   }
 
-  Aggregator::Aggregator(): testCount{0} {
-    tests = new Test[MAX_TEST_COUNT];
-  }
-
-  Aggregator * Aggregator::singleton = new Aggregator();
-
+  std::vector<Test> Aggregator::tests;
   void Aggregator::add(Test t) {
-    if ((*Aggregator::singleton).testCount >= MAX_TEST_COUNT) {
-      throw AggregationException("The test count overflowed the aggregator's capacity.");
-    }
-    (*Aggregator::singleton).tests[(*Aggregator::singleton).testCount++] = t;
+    Aggregator::tests.push_back(t);
   }
 
   bool update_name(char * name, const char * source) {
@@ -38,29 +30,28 @@ namespace gerryfudd::test {
   int Aggregator::run_all() {
     int failureCount = 0;
     std::stringstream failure, info_buff, failure_buff;
-    char * current_file = new char[NAME_BUFFFER];
-    current_file[0] = '\0';
-    Test current_test;
+    std::string current_file;
+    int ordinal = 1;
 
-    for (int ordinal = 0; ordinal < (*Aggregator::singleton).testCount; ordinal++) {
+    for (std::vector<Test>::iterator current_test = tests.begin(); current_test != tests.end(); current_test++) {
       info_buff.str(std::string());
       failure_buff.str(std::string());
-      current_test = (*Aggregator::singleton).tests[ordinal];
-      if (update_name(current_file, current_test.get_filename())) {
+      if (current_file != current_test->get_filename()) {
+        current_file = current_test->get_filename();
         std::cout << std::endl << "Test file: " << current_file << std::endl << std::endl;
       }
-
-      if (current_test.run(ordinal + 1, info_buff, failure_buff)) {
+      if (current_test->run(ordinal++, info_buff, failure_buff)) {
         failureCount++;
         failure << std::endl << info_buff.str() << std::endl << failure_buff.str();
       }
       std::cout << info_buff.str() << std::endl;
     }
-    delete[] current_file;
 
     if (failureCount > 0) {
       std::cerr << "Test failures" << std::endl;
       std::cerr << failure.str() << std::endl;
+    } else {
+      std::cout << std::endl << std::endl << "ALL TESTS PASSED" << std::endl << std::endl;
     }
     return failureCount;
   }
