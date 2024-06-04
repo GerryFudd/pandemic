@@ -55,12 +55,14 @@ TEST(setup_and_get_state) {
 
   game.setup("/home/david/Documents/projects/pandemic/public");
 
-  int with_one = 0, with_two = 0, with_three = 0, current_count;
   gerryfudd::types::city::City current_city;
+  gerryfudd::types::city::CityState current_state;
+  int with_one = 0, with_two = 0, with_three = 0, current_count;
 
   for (std::map<std::string, gerryfudd::types::city::City>::iterator cursor = game.city_begin(); cursor != game.city_end(); cursor++) {
     current_city = cursor->second;
-    current_count = game.get_state(&current_city).get_count(current_city.get_color());
+    current_state = game.get_state(cursor->first);
+    current_count = current_state.get_count(current_city.get_color());
     switch (current_count)
     {
     case 1:
@@ -68,8 +70,10 @@ TEST(setup_and_get_state) {
       break;
     case 2:
       with_two++;
+      break;
     case 3:
       with_three++;
+      break;
     default:
       break;
     }

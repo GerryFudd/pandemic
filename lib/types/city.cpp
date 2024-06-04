@@ -28,14 +28,17 @@ namespace gerryfudd::types::city {
     (*b).neighbors.push_back(*a);
   }
 
-  CityState::CityState(): disease_count{}, prevent_placement{false}, research_facility{false} {
-    disease_count[disease::black] = 0;
-    disease_count[disease::blue] = 0;
-    disease_count[disease::red] = 0;
-    disease_count[disease::yellow] = 0;
-  }
+  CityState::CityState(): prevent_placement{false}, research_facility{false} {}
 
   int CityState::get_count(disease::DiseaseColor color) {
     return disease_count[color];
+  }
+
+  int CityState::add(disease::DiseaseColor color, int quantity) {
+    if (prevent_placement) {
+      return 0;
+    }
+    disease_count[color] += quantity;
+    return quantity;
   }
 }

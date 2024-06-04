@@ -28,6 +28,7 @@ namespace gerryfudd::types::city {
   public:
     CityState();
     int get_count(disease::DiseaseColor);
+    int add(disease::DiseaseColor, int);
   };
 }
 #endif

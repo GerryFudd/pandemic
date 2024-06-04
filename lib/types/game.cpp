@@ -1,9 +1,48 @@
 #include <types/game.hpp>
 #include <fstream>
 #include <vector>
+#include <exception>
+#include <random>
 
 namespace gerryfudd::types {
-  Game::Game(): diseases{}, cities{}, board{} {
+  Card::Card(std::string name, CardType type): name{name}, type{type} {}
+
+  Deck::Deck(CardType type): contents{}, discard{}, type{type} {}
+  void Deck::add(Card card) {
+    if (type != card.type) {
+      throw std::invalid_argument("This deck only accepts one type of card.");
+    }
+    discard.push_back(card);
+  }
+  int random(int options) {
+    std::random_device generator;
+    std::uniform_int_distribution<int> distribution(0,options-1);
+    return distribution(generator);
+  }
+  void Deck::shuffle() {
+    int i;
+    while (discard.size() > 0) {
+      i = random(discard.size());
+      contents.push_back(discard[i]);
+      discard.erase(discard.begin() + i);
+    }
+  }
+  Card Deck::draw() {
+    discard.push_back(contents.back());
+    contents.pop_back();
+    return discard.back();
+  }
+  Card Deck::reveal(int position) {
+    return contents[contents.size() - position];
+  }
+  int Deck::size() {
+    return contents.size() + discard.size();
+  }
+  int Deck::remaining() {
+    return contents.size();
+  }
+
+  Game::Game(): diseases{}, cities{}, board{}, infection_deck{infect} {
     diseases[disease::DiseaseColor::black] = disease::DiseaseStatus();
     diseases[disease::DiseaseColor::blue] = disease::DiseaseStatus();
     diseases[disease::DiseaseColor::red] = disease::DiseaseStatus();
@@ -51,8 +90,31 @@ namespace gerryfudd::types {
     read_cities_file(source_directory, disease::red, &cities);
     read_cities_file(source_directory, disease::yellow, &cities);
     for (std::map<std::string, city::City>::iterator cursor = cities.begin(); cursor != cities.end(); ++cursor) {
-      board[&(cursor->second)] = city::CityState();
+      board[cursor->first] = city::CityState();
+      infection_deck.add(Card(cursor->first, infect));
     }
+    infection_deck.shuffle();
+
+    std::string target_name = infection_deck.draw().name;
+    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 1));
+    target_name = infection_deck.draw().name;
+    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 1));
+    target_name = infection_deck.draw().name;
+    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 1));
+
+    target_name = infection_deck.draw().name;
+    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 2));
+    target_name = infection_deck.draw().name;
+    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 2));
+    target_name = infection_deck.draw().name;
+    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 2));
+
+    target_name = infection_deck.draw().name;
+    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 3));
+    target_name = infection_deck.draw().name;
+    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 3));
+    target_name = infection_deck.draw().name;
+    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 3));
   }
 
   int Game::get_reserve(disease::DiseaseColor disease_color) {
@@ -79,7 +141,7 @@ namespace gerryfudd::types {
     return cities.size();
   }
 
-  city::CityState Game::get_state(city::City *city) {
-    return board[city];
+  city::CityState Game::get_state(std::string city_name) {
+    return board[city_name];
   }
 }

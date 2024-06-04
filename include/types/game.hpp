@@ -8,10 +8,30 @@
 #include <vector>
 
 namespace gerryfudd::types {
+  enum CardType { player, infect };
+  struct Card {
+    std::string name;
+    CardType type;
+    Card(std::string, CardType);
+  };
+  class Deck {
+    std::vector<Card> contents;
+    std::vector<Card> discard;
+    CardType type;
+  public:
+    Deck(CardType);
+    void add(Card);
+    void shuffle(void);
+    Card draw(void);
+    Card reveal(int);
+    int size(void);
+    int remaining(void);
+  };
   class Game {
     std::map<disease::DiseaseColor, disease::DiseaseStatus> diseases;
     std::map<std::string, city::City> cities;
-    std::map<city::City*, city::CityState> board;
+    std::map<std::string, city::CityState> board;
+    Deck infection_deck;
   public:
     Game();
     void setup(std::filesystem::path);
@@ -21,7 +41,7 @@ namespace gerryfudd::types {
     std::map<std::string, city::City>::iterator city_begin();
     std::map<std::string, city::City>::iterator city_end();
     int get_city_count(void);
-    city::CityState get_state(city::City *city);
+    city::CityState get_state(std::string);
   };
 }
 
