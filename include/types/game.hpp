@@ -32,6 +32,8 @@ namespace gerryfudd::types {
     std::map<std::string, city::City> cities;
     std::map<std::string, city::CityState> board;
     Deck infection_deck;
+    int place(std::string, disease::DiseaseColor, int);
+    int place(std::string, int);
   public:
     Game();
     void setup(std::filesystem::path);

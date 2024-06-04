@@ -35,21 +35,21 @@ TEST(setup_and_get_cities) {
     montreal = game.get_city("Montréal"),
     ho_chi_minh_city = game.get_city("Ho Chi Minh City"),
     sao_paulo = game.get_city("São Paulo");
-  assert_equal_strings(istanbul.get_name(), "Istanbul");
-  assert_equal(istanbul.get_color(), gerryfudd::types::disease::black);
-  assert_equal(istanbul.get_population(), 13576000);
+  assert_equal<std::string>(istanbul.name, "Istanbul");
+  assert_equal(istanbul.color, gerryfudd::types::disease::black);
+  assert_equal(istanbul.population, 13576000);
 
-  assert_equal_strings(montreal.get_name(), "Montréal");
-  assert_equal(montreal.get_color(), gerryfudd::types::disease::blue);
-  assert_equal(montreal.get_population(), 3429000);
+  assert_equal<std::string>(montreal.name, "Montréal");
+  assert_equal(montreal.color, gerryfudd::types::disease::blue);
+  assert_equal(montreal.population, 3429000);
 
-  assert_equal_strings(ho_chi_minh_city.get_name(), "Ho Chi Minh City");
-  assert_equal(ho_chi_minh_city.get_color(), gerryfudd::types::disease::red);
-  assert_equal(ho_chi_minh_city.get_population(), 8314000);
+  assert_equal<std::string>(ho_chi_minh_city.name, "Ho Chi Minh City");
+  assert_equal(ho_chi_minh_city.color, gerryfudd::types::disease::red);
+  assert_equal(ho_chi_minh_city.population, 8314000);
 
-  assert_equal_strings(sao_paulo.get_name(), "São Paulo");
-  assert_equal(sao_paulo.get_color(), gerryfudd::types::disease::yellow);
-  assert_equal(sao_paulo.get_population(), 20186000);
+  assert_equal<std::string>(sao_paulo.name, "São Paulo");
+  assert_equal(sao_paulo.color, gerryfudd::types::disease::yellow);
+  assert_equal(sao_paulo.population, 20186000);
 }
 
 TEST(setup_and_get_state) {
@@ -64,7 +64,7 @@ TEST(setup_and_get_state) {
   for (std::map<std::string, gerryfudd::types::city::City>::iterator cursor = game.city_begin(); cursor != game.city_end(); cursor++) {
     current_city = cursor->second;
     current_state = game.get_state(cursor->first);
-    current_count = current_state.get_count(current_city.get_color());
+    current_count = current_state.disease_count[current_city.color];
     switch (current_count)
     {
     case 1:

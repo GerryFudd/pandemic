@@ -49,6 +49,19 @@ namespace gerryfudd::types {
     diseases[disease::DiseaseColor::yellow] = disease::DiseaseStatus();
   }
 
+  int Game::place(std::string target, disease::DiseaseColor color, int quantity) {
+    if (board[target].prevent_placement) {
+      return 0;
+    }
+    diseases[color].reserve -= quantity;
+    board[target].disease_count[color] += quantity;
+    return quantity;
+  }
+
+  int Game::place(std::string target, int quantity) {
+    return place(target, cities[target].color, quantity);
+  }
+
   void read_cities_file(std::filesystem::path source_directory, disease::DiseaseColor color, std::map<std::string, city::City> *target) {
     std::ifstream fin;
     fin.open(source_directory / (disease::name_of(color) + "_cities.tsv"), std::ifstream::in);
@@ -95,34 +108,25 @@ namespace gerryfudd::types {
     }
     infection_deck.shuffle();
 
-    std::string target_name = infection_deck.draw().name;
-    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 1));
-    target_name = infection_deck.draw().name;
-    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 1));
-    target_name = infection_deck.draw().name;
-    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 1));
+    place(infection_deck.draw().name, 1);
+    place(infection_deck.draw().name, 1);
+    place(infection_deck.draw().name, 1);
 
-    target_name = infection_deck.draw().name;
-    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 2));
-    target_name = infection_deck.draw().name;
-    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 2));
-    target_name = infection_deck.draw().name;
-    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 2));
+    place(infection_deck.draw().name, 2);
+    place(infection_deck.draw().name, 2);
+    place(infection_deck.draw().name, 2);
 
-    target_name = infection_deck.draw().name;
-    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 3));
-    target_name = infection_deck.draw().name;
-    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 3));
-    target_name = infection_deck.draw().name;
-    diseases[cities[target_name].get_color()].place(board[target_name].add(cities[target_name].get_color(), 3));
+    place(infection_deck.draw().name, 3);
+    place(infection_deck.draw().name, 3);
+    place(infection_deck.draw().name, 3);
   }
 
   int Game::get_reserve(disease::DiseaseColor disease_color) {
-    return diseases[disease_color].get_reserve();
+    return diseases[disease_color].reserve;
   }
 
   bool Game::is_cured(disease::DiseaseColor disease_color) {
-    return diseases[disease_color].is_cured();
+    return diseases[disease_color].cured;
   }
 
   city::City Game::get_city(std::string city_name) {

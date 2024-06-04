@@ -5,30 +5,21 @@
 #include <map>
 
 namespace gerryfudd::types::city {
-  class City {
+  struct City {
     std::string name;
     disease::DiseaseColor color;
     int population;
     std::vector<City> neighbors;
-  public:
     City();
     City(std::string, disease::DiseaseColor, int);
-    const char *get_name(void);
-    disease::DiseaseColor get_color(void);
-    int get_population(void);
-    City get_neighbor(int);
-    int get_neighbor_count(void);
-    friend void attach(City*, City*);
+    friend void attach(City *, City *);
   };
 
-  class CityState {
+  struct CityState {
     std::map<disease::DiseaseColor, int> disease_count;
     bool prevent_placement;
     bool research_facility;
-  public:
     CityState();
-    int get_count(disease::DiseaseColor);
-    int add(disease::DiseaseColor, int);
   };
 }
 #endif
