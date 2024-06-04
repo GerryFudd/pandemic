@@ -2,6 +2,8 @@
 #include <Assertions.inl>
 #include <types/game.hpp>
 
+#define SETUP_DIRECTORY "/home/david/Documents/projects/pandemic/public"
+
 using namespace gerryfudd::test;
 
 TEST(get_reserve) {
@@ -25,7 +27,7 @@ TEST(is_cured) {
 TEST(setup_and_get_cities) {
   gerryfudd::types::Game game;
 
-  game.setup("/home/david/Documents/projects/pandemic/public");
+  game.setup(SETUP_DIRECTORY);
 
   assert_equal(game.get_city_count(), 48);
 
@@ -53,7 +55,7 @@ TEST(setup_and_get_cities) {
 TEST(setup_and_get_state) {
   gerryfudd::types::Game game;
 
-  game.setup("/home/david/Documents/projects/pandemic/public");
+  game.setup(SETUP_DIRECTORY);
 
   gerryfudd::types::city::City current_city;
   gerryfudd::types::city::CityState current_state;
@@ -82,4 +84,17 @@ TEST(setup_and_get_state) {
   assert_equal(with_one, 3);
   assert_equal(with_two, 3);
   assert_equal(with_three, 3);
+}
+
+TEST(setup_and_get_reserve) {
+  gerryfudd::types::Game game;
+  game.setup(SETUP_DIRECTORY);
+
+  int total_reserve = 0;
+  total_reserve += game.get_reserve(gerryfudd::types::disease::black);
+  total_reserve += game.get_reserve(gerryfudd::types::disease::blue);
+  total_reserve += game.get_reserve(gerryfudd::types::disease::red);
+  total_reserve += game.get_reserve(gerryfudd::types::disease::yellow);
+
+  assert_equal(total_reserve, 4 * DISEASE_RESERVE - 18);
 }
