@@ -1,19 +1,20 @@
 #include <types/disease.hpp>
+#include <exception>
 
 namespace gerryfudd::types::disease {
-  const char *name_of(DiseaseColor color) {
+  std::string name_of(DiseaseColor color) {
     switch (color)
     {
-    case DiseaseColor::black:
+    case black:
       return "black";
-    case DiseaseColor::blue:
+    case blue:
       return "blue";
-    case DiseaseColor::red:
+    case red:
       return "red";
-    case DiseaseColor::yellow:
+    case yellow:
       return "yellow";
-      default:
-      throw "No color name.";
+    default:
+      throw std::invalid_argument("The supplied disease is not named.");
     }
   }
   DiseaseStatus::DiseaseStatus(): reserve{DISEASE_RESERVE}, cured{false} {}

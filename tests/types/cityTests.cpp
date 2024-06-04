@@ -12,9 +12,9 @@ TEST(get_name) {
 }
 
 TEST(get_color) {
-  gerryfudd::types::city::City city("CITY_NAME", gerryfudd::types::disease::blue, 1000000);
+  gerryfudd::types::city::City city("CITY_NAME", gerryfudd::types::disease::DiseaseColor::blue, 1000000);
 
-  assert_equal_strings(city.get_color(), "blue");
+  assert_equal(city.get_color(), gerryfudd::types::disease::blue);
 }
 
 TEST(get_population) {

@@ -2,14 +2,14 @@
 #ifndef DISEASE_TYPES
 #define DISEASE_TYPES
 #include <iostream>
-
+#include <string>
 
 #define DISEASE_RESERVE 24
 
 namespace gerryfudd::types::disease {
 
-		enum DiseaseColor { black, blue, red, yellow };
-		const char *name_of(DiseaseColor);
+		enum DiseaseColor { black, blue, red, yellow, none };
+		std::string name_of(DiseaseColor);
 
 		class DiseaseStatus {
       int reserve;
