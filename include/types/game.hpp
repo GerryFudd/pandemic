@@ -16,17 +16,18 @@ namespace gerryfudd::types {
   };
   class Deck {
     std::vector<Card> contents;
-    std::vector<Card> discard;
+    std::vector<Card> discard_contents;
     CardType type;
   public:
     Deck(CardType);
-    void add(Card);
+    void discard(Card);
     void shuffle(void);
     Card draw(void);
     Card reveal(int);
     int size(void);
     int remaining(void);
   };
+
   class Game {
     std::map<disease::DiseaseColor, disease::DiseaseStatus> diseases;
     std::map<std::string, city::City> cities;

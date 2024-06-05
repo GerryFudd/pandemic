@@ -7,12 +7,12 @@
 namespace gerryfudd::types {
   Card::Card(std::string name, CardType type): name{name}, type{type} {}
 
-  Deck::Deck(CardType type): contents{}, discard{}, type{type} {}
-  void Deck::add(Card card) {
+  Deck::Deck(CardType type): type{type} {}
+  void Deck::discard(Card card) {
     if (type != card.type) {
       throw std::invalid_argument("This deck only accepts one type of card.");
     }
-    discard.push_back(card);
+    discard_contents.push_back(card);
   }
   int random(int options) {
     std::random_device generator;
@@ -21,22 +21,22 @@ namespace gerryfudd::types {
   }
   void Deck::shuffle() {
     int i;
-    while (discard.size() > 0) {
-      i = random(discard.size());
-      contents.push_back(discard[i]);
-      discard.erase(discard.begin() + i);
+    while (discard_contents.size() > 0) {
+      i = random(discard_contents.size());
+      contents.push_back(discard_contents[i]);
+      discard_contents.erase(discard_contents.begin() + i);
     }
   }
   Card Deck::draw() {
-    discard.push_back(contents.back());
+    Card result = contents.back();
     contents.pop_back();
-    return discard.back();
+    return result;
   }
   Card Deck::reveal(int position) {
     return contents[contents.size() - position];
   }
   int Deck::size() {
-    return contents.size() + discard.size();
+    return contents.size() + discard_contents.size();
   }
   int Deck::remaining() {
     return contents.size();
@@ -104,7 +104,7 @@ namespace gerryfudd::types {
     read_cities_file(source_directory, disease::yellow, &cities);
     for (std::map<std::string, city::City>::iterator cursor = cities.begin(); cursor != cities.end(); ++cursor) {
       board[cursor->first] = city::CityState();
-      infection_deck.add(Card(cursor->first, infect));
+      infection_deck.discard(Card(cursor->first, infect));
     }
     infection_deck.shuffle();
 
