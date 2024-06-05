@@ -5,44 +5,46 @@
 #include <random>
 
 namespace gerryfudd::types {
-  Card::Card(std::string name, CardType type): name{name}, type{type} {}
+  namespace card {
+    Card::Card(std::string name, CardType type): name{name}, type{type} {}
 
-  Deck::Deck(CardType type): type{type} {}
-  void Deck::discard(Card card) {
-    if (type != card.type) {
-      throw std::invalid_argument("This deck only accepts one type of card.");
+    Deck::Deck(CardType type): type{type} {}
+    void Deck::discard(Card card) {
+      if (type != card.type) {
+        throw std::invalid_argument("This deck only accepts one type of card.");
+      }
+      discard_contents.push_back(card);
     }
-    discard_contents.push_back(card);
-  }
-  int random(int options) {
-    std::random_device generator;
-    std::uniform_int_distribution<int> distribution(0,options-1);
-    return distribution(generator);
-  }
-  void Deck::shuffle() {
-    int i;
-    while (discard_contents.size() > 0) {
-      i = random(discard_contents.size());
-      contents.push_back(discard_contents[i]);
-      discard_contents.erase(discard_contents.begin() + i);
+    int random(int options) {
+      std::random_device generator;
+      std::uniform_int_distribution<int> distribution(0,options-1);
+      return distribution(generator);
     }
-  }
-  Card Deck::draw() {
-    Card result = contents.back();
-    contents.pop_back();
-    return result;
-  }
-  Card Deck::reveal(int position) {
-    return contents[contents.size() - position];
-  }
-  int Deck::size() {
-    return contents.size() + discard_contents.size();
-  }
-  int Deck::remaining() {
-    return contents.size();
+    void Deck::shuffle() {
+      int i;
+      while (discard_contents.size() > 0) {
+        i = random(discard_contents.size());
+        contents.push_back(discard_contents[i]);
+        discard_contents.erase(discard_contents.begin() + i);
+      }
+    }
+    Card Deck::draw() {
+      Card result = contents.back();
+      contents.pop_back();
+      return result;
+    }
+    Card Deck::reveal(int position) {
+      return contents[contents.size() - position];
+    }
+    int Deck::size() {
+      return contents.size() + discard_contents.size();
+    }
+    int Deck::remaining() {
+      return contents.size();
+    }
   }
 
-  Game::Game(): diseases{}, cities{}, board{}, infection_deck{infect} {
+  Game::Game(): diseases{}, cities{}, board{}, infection_deck{card::infect} {
     diseases[disease::DiseaseColor::black] = disease::DiseaseStatus();
     diseases[disease::DiseaseColor::blue] = disease::DiseaseStatus();
     diseases[disease::DiseaseColor::red] = disease::DiseaseStatus();
@@ -104,7 +106,7 @@ namespace gerryfudd::types {
     read_cities_file(source_directory, disease::yellow, &cities);
     for (std::map<std::string, city::City>::iterator cursor = cities.begin(); cursor != cities.end(); ++cursor) {
       board[cursor->first] = city::CityState();
-      infection_deck.discard(Card(cursor->first, infect));
+      infection_deck.discard(card::Card(cursor->first, card::infect));
     }
     infection_deck.shuffle();
 

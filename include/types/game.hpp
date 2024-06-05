@@ -8,31 +8,33 @@
 #include <vector>
 
 namespace gerryfudd::types {
-  enum CardType { player, infect };
-  struct Card {
-    std::string name;
-    CardType type;
-    Card(std::string, CardType);
-  };
-  class Deck {
-    std::vector<Card> contents;
-    std::vector<Card> discard_contents;
-    CardType type;
-  public:
-    Deck(CardType);
-    void discard(Card);
-    void shuffle(void);
-    Card draw(void);
-    Card reveal(int);
-    int size(void);
-    int remaining(void);
-  };
+  namespace card {
+    enum CardType { player, infect };
+    struct Card {
+      std::string name;
+      CardType type;
+      Card(std::string, CardType);
+    };
+    class Deck {
+      std::vector<Card> contents;
+      std::vector<Card> discard_contents;
+      CardType type;
+    public:
+      Deck(CardType);
+      void discard(Card);
+      void shuffle(void);
+      Card draw(void);
+      Card reveal(int);
+      int size(void);
+      int remaining(void);
+    };
+  }
 
   class Game {
     std::map<disease::DiseaseColor, disease::DiseaseStatus> diseases;
     std::map<std::string, city::City> cities;
     std::map<std::string, city::CityState> board;
-    Deck infection_deck;
+    card::Deck infection_deck;
     int place(std::string, disease::DiseaseColor, int);
     int place(std::string, int);
   public:

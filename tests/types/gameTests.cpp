@@ -55,12 +55,12 @@ TEST(setup_and_get_cities) {
 TEST(populate_deck) {
   std::string card_names[] = {"foo", "bar", "baz"};
 
-  gerryfudd::types::Deck deck{gerryfudd::types::infect};
+  gerryfudd::types::card::Deck deck{gerryfudd::types::card::infect};
   assert_equal(deck.size(), 0);
   assert_equal(deck.remaining(), 0);
 
   for (int i = 0; i < 3; i++) {
-    deck.discard(gerryfudd::types::Card(card_names[i], gerryfudd::types::infect));
+    deck.discard(gerryfudd::types::card::Card(card_names[i], gerryfudd::types::card::infect));
     assert_equal(deck.size(), i + 1);
     assert_equal(deck.remaining(), 0);
   }
@@ -83,8 +83,8 @@ TEST(populate_deck) {
 }
 
 TEST(deck_rejects_wrong_type) {
-  gerryfudd::types::Deck infect_deck{gerryfudd::types::infect};
-  gerryfudd::types::Card infect_card{"Infect card", gerryfudd::types::infect}, player_card{"Player Card", gerryfudd::types::player};
+  gerryfudd::types::card::Deck infect_deck{gerryfudd::types::card::infect};
+  gerryfudd::types::card::Card infect_card{"Infect card", gerryfudd::types::card::infect}, player_card{"Player Card", gerryfudd::types::card::player};
   bool error_thrown{false};
   try {
     infect_deck.discard(infect_card);
