@@ -11,10 +11,19 @@
 
 namespace gerryfudd::types::card {
   enum CardType { player, infect };
+  std::string name_of(CardType);
   struct Card {
     std::string name;
     CardType type;
+    bool city;
     Card(std::string, CardType);
+    Card(std::string, CardType, bool);
+  };
+  struct Hand {
+    CardType type;
+    std::vector<Card> contents;
+    Hand(CardType);
+    friend std::ostream& operator<<(std::ostream&, const Hand&);
   };
   class Deck {
     std::vector<Card> contents;

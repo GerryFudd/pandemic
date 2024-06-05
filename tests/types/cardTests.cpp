@@ -67,13 +67,13 @@ TEST(deck_insert) {
 
   player_deck.shuffle();
 
-  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player), 6);
+  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player, false), 6);
   assert_equal<std::string>(player_deck.reveal(6).name, EPIDEMIC);
 
-  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player), 3);
+  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player, false), 3);
   assert_equal<std::string>(player_deck.reveal(3).name, EPIDEMIC);
 
-  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player), 0);
+  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player, false), 0);
   assert_equal<std::string>(player_deck.reveal(0).name, EPIDEMIC);
 
   assert_equal(player_deck.remaining(), 12);
@@ -84,15 +84,15 @@ TEST(deck_shuffle) {
   player_deck.insert(gerryfudd::types::card::Card("Seattle", gerryfudd::types::card::player), 0);
   player_deck.insert(gerryfudd::types::card::Card("Tacoma", gerryfudd::types::card::player), 0); 
   player_deck.insert(gerryfudd::types::card::Card("Olympia", gerryfudd::types::card::player), 0); 
-  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player), 0);
+  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player, false), 0);
   player_deck.insert(gerryfudd::types::card::Card("Centralia", gerryfudd::types::card::player), 0); 
   player_deck.insert(gerryfudd::types::card::Card("Astoria", gerryfudd::types::card::player), 0); 
   player_deck.insert(gerryfudd::types::card::Card("Newberg", gerryfudd::types::card::player), 0); 
-  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player), 0);
+  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player, false), 0);
   player_deck.insert(gerryfudd::types::card::Card("Portland", gerryfudd::types::card::player), 0); 
   player_deck.insert(gerryfudd::types::card::Card("Bend", gerryfudd::types::card::player), 0); 
   player_deck.insert(gerryfudd::types::card::Card("Gresham", gerryfudd::types::card::player), 0);
-  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player), 0);
+  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player, false), 0);
 
   player_deck.shuffle(0, 4);
   player_deck.shuffle(4, 8);
@@ -121,4 +121,17 @@ TEST(deck_shuffle) {
     }
   }
   assert_true(has_match, "One of the last four cards should be an Epidemic");
+}
+
+TEST(hand_is_streamable) {
+  gerryfudd::types::card::Hand player_hand(gerryfudd::types::card::player);
+
+  player_hand.contents.push_back(gerryfudd::types::card::Card("foo", gerryfudd::types::card::player, false));
+  player_hand.contents.push_back(gerryfudd::types::card::Card("bar", gerryfudd::types::card::player, false));
+  player_hand.contents.push_back(gerryfudd::types::card::Card("baz", gerryfudd::types::card::player, false));
+
+  std::stringstream captor;
+  captor << player_hand;
+
+  assert_equal<std::string>(captor.str(), "Player hand: baz, bar, foo");
 }

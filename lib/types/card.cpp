@@ -1,9 +1,39 @@
 #include <types/card.hpp>
 #include <random>
 #include <stdexcept>
+#include <iostream>
 
 namespace gerryfudd::types::card {
-  Card::Card(std::string name, CardType type): name{name}, type{type} {}
+  std::string name_of(CardType card_type) {
+    switch (card_type)
+    {
+    case infect:
+      return "Infect";
+    case player:
+      return "Player";
+    default:
+      throw std::invalid_argument("This card type doesn't have a name");
+    }
+  }
+  Card::Card(std::string name, CardType type): Card::Card(name, type, true) {}
+  Card::Card(std::string name, CardType type, bool city): name{name}, type{type}, city{city} {}
+
+
+  Hand::Hand(CardType type): type{type} {}
+  std::ostream& operator<<(std::ostream& out, const Hand &hand) {
+    out << name_of(hand.type);
+    out << " hand: ";
+    bool middle = false;
+    for (auto cursor = hand.contents.rbegin(); cursor != hand.contents.rend(); cursor++) {
+      if (middle) {
+        out << ", ";
+      } else {
+        middle = true;
+      }
+      out << cursor->name;
+    }
+    return out;
+  }
 
   Deck::Deck(CardType type): type{type} {}
   void Deck::discard(Card card) {
