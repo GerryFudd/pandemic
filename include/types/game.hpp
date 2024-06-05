@@ -2,34 +2,12 @@
 #define GAME_TYPE
 #include <types/disease.hpp>
 #include <types/city.hpp>
+#include <types/card.hpp>
 #include <filesystem>
 #include <map>
 #include <string>
-#include <vector>
 
 namespace gerryfudd::types {
-  namespace card {
-    enum CardType { player, infect };
-    struct Card {
-      std::string name;
-      CardType type;
-      Card(std::string, CardType);
-    };
-    class Deck {
-      std::vector<Card> contents;
-      std::vector<Card> discard_contents;
-      CardType type;
-    public:
-      Deck(CardType);
-      void discard(Card);
-      void shuffle(void);
-      Card draw(void);
-      Card reveal(int);
-      int size(void);
-      int remaining(void);
-    };
-  }
-
   class Game {
     std::map<disease::DiseaseColor, disease::DiseaseStatus> diseases;
     std::map<std::string, city::City> cities;

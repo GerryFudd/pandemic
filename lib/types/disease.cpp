@@ -1,5 +1,4 @@
 #include <types/disease.hpp>
-#include <exception>
 
 namespace gerryfudd::types::disease {
   std::string name_of(DiseaseColor color) {

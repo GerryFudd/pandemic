@@ -1,7 +1,6 @@
 #include <types/city.hpp>
 #include <stdexcept>
 
-
 namespace gerryfudd::types::city {
   City::City(std::string name, disease::DiseaseColor color, int population):
     name{name}, color{color}, population{population} {}
