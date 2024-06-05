@@ -4,7 +4,8 @@
 #include <random>
 
 namespace gerryfudd::types {
-  Game::Game(): diseases{}, cities{}, board{}, infection_deck{card::infect} {
+  int Game::infection_rate_escalation[] = INFECTION_RATE_ESCALATION;
+  Game::Game(): infection_deck{card::infect}, player_deck{card::player}, outbreaks{0}, infection_rate{0} {
     diseases[disease::DiseaseColor::black] = disease::DiseaseStatus();
     diseases[disease::DiseaseColor::blue] = disease::DiseaseStatus();
     diseases[disease::DiseaseColor::red] = disease::DiseaseStatus();
@@ -59,14 +60,25 @@ namespace gerryfudd::types {
     fin.close();
   }
 
-  void Game::setup(std::filesystem::path source_directory) {
-    read_cities_file(source_directory, disease::black, &cities);
-    read_cities_file(source_directory, disease::blue, &cities);
-    read_cities_file(source_directory, disease::red, &cities);
-    read_cities_file(source_directory, disease::yellow, &cities);
+  std::filesystem::path resolve_public_path() {
+    std::filesystem::path this_file = __FILE__;
+    return this_file.parent_path().parent_path().parent_path() / "public";
+  }
+
+  void Game::setup() {
+    setup(easy);
+  }
+
+  void Game::setup(Difficulty difficulty) {
+    std::filesystem::path public_path = resolve_public_path();
+    read_cities_file(public_path, disease::black, &cities);
+    read_cities_file(public_path, disease::blue, &cities);
+    read_cities_file(public_path, disease::red, &cities);
+    read_cities_file(public_path, disease::yellow, &cities);
     for (std::map<std::string, city::City>::iterator cursor = cities.begin(); cursor != cities.end(); ++cursor) {
       board[cursor->first] = city::CityState();
       infection_deck.discard(card::Card(cursor->first, card::infect));
+      player_deck.discard(card::Card(cursor->first, card::player));
     }
     infection_deck.shuffle();
 
@@ -81,6 +93,13 @@ namespace gerryfudd::types {
     place(infection_deck.draw().name, 3);
     place(infection_deck.draw().name, 3);
     place(infection_deck.draw().name, 3);
+    
+    player_deck.discard(card::Card(ONE_QUIET_NIGHT, card::player));
+    player_deck.discard(card::Card(RESILIENT_POPULATION, card::player));
+    player_deck.discard(card::Card(GOVERNMENT_GRANT, card::player));
+    player_deck.discard(card::Card(AIRLIFT, card::player));
+
+    player_deck.shuffle();
   }
 
   int Game::get_reserve(disease::DiseaseColor disease_color) {

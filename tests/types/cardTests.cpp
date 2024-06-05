@@ -52,3 +52,73 @@ TEST(deck_rejects_wrong_type) {
   }
   assert_true(error_thrown, "Inserting the wrong card type should throw an error.");
 }
+
+TEST(deck_insert) {
+  gerryfudd::types::card::Deck player_deck{gerryfudd::types::card::player};
+  player_deck.discard(gerryfudd::types::card::Card("Seattle", gerryfudd::types::card::player));
+  player_deck.discard(gerryfudd::types::card::Card("Tacoma", gerryfudd::types::card::player)); 
+  player_deck.discard(gerryfudd::types::card::Card("Olympia", gerryfudd::types::card::player)); 
+  player_deck.discard(gerryfudd::types::card::Card("Centralia", gerryfudd::types::card::player)); 
+  player_deck.discard(gerryfudd::types::card::Card("Astoria", gerryfudd::types::card::player)); 
+  player_deck.discard(gerryfudd::types::card::Card("Newberg", gerryfudd::types::card::player)); 
+  player_deck.discard(gerryfudd::types::card::Card("Portland", gerryfudd::types::card::player)); 
+  player_deck.discard(gerryfudd::types::card::Card("Bend", gerryfudd::types::card::player)); 
+  player_deck.discard(gerryfudd::types::card::Card("Gresham", gerryfudd::types::card::player));
+
+  player_deck.shuffle();
+
+  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player), 6);
+  assert_equal<std::string>(player_deck.reveal(6).name, EPIDEMIC);
+
+  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player), 3);
+  assert_equal<std::string>(player_deck.reveal(3).name, EPIDEMIC);
+
+  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player), 0);
+  assert_equal<std::string>(player_deck.reveal(0).name, EPIDEMIC);
+
+  assert_equal(player_deck.remaining(), 12);
+}
+
+TEST(deck_shuffle) {
+  gerryfudd::types::card::Deck player_deck{gerryfudd::types::card::player};
+  player_deck.insert(gerryfudd::types::card::Card("Seattle", gerryfudd::types::card::player), 0);
+  player_deck.insert(gerryfudd::types::card::Card("Tacoma", gerryfudd::types::card::player), 0); 
+  player_deck.insert(gerryfudd::types::card::Card("Olympia", gerryfudd::types::card::player), 0); 
+  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player), 0);
+  player_deck.insert(gerryfudd::types::card::Card("Centralia", gerryfudd::types::card::player), 0); 
+  player_deck.insert(gerryfudd::types::card::Card("Astoria", gerryfudd::types::card::player), 0); 
+  player_deck.insert(gerryfudd::types::card::Card("Newberg", gerryfudd::types::card::player), 0); 
+  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player), 0);
+  player_deck.insert(gerryfudd::types::card::Card("Portland", gerryfudd::types::card::player), 0); 
+  player_deck.insert(gerryfudd::types::card::Card("Bend", gerryfudd::types::card::player), 0); 
+  player_deck.insert(gerryfudd::types::card::Card("Gresham", gerryfudd::types::card::player), 0);
+  player_deck.insert(gerryfudd::types::card::Card(EPIDEMIC, gerryfudd::types::card::player), 0);
+
+  player_deck.shuffle(0, 4);
+  player_deck.shuffle(4, 8);
+  player_deck.shuffle(8, 12);
+  bool has_match{false};
+  for (int i = 0; i < 4; i++) {
+    if (player_deck.reveal(i).name == EPIDEMIC) {
+      has_match = true;
+      break;
+    }
+  }
+  assert_true(has_match, "One of the first four cards should be an Epidemic");
+  has_match = false;
+  for (int i = 4; i < 8; i++) {
+    if (player_deck.reveal(i).name == EPIDEMIC) {
+      has_match = true;
+      break;
+    }
+  }
+  assert_true(has_match, "One of the middle four cards should be an Epidemic");
+  has_match = false;
+  for (int i = 8; i < 12; i++) {
+    if (player_deck.reveal(i).name == EPIDEMIC) {
+      has_match = true;
+      break;
+    }
+  }
+  assert_true(has_match, "One of the last four cards should be an Epidemic");
+}

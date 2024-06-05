@@ -25,13 +25,31 @@ namespace gerryfudd::types::card {
       discard_contents.erase(discard_contents.begin() + i);
     }
   }
+  void Deck::shuffle(int start, int end) {
+    std::vector<Card> tempSection;
+    auto content_addr = contents.end() - end;
+    int temp_i;
+    while (tempSection.size() < end - start) {
+      tempSection.push_back(*content_addr);
+      contents.erase(content_addr);
+    }
+    while (tempSection.size() > 0) {
+      temp_i = random(tempSection.size());
+      contents.insert(content_addr, tempSection[temp_i]);
+      tempSection.erase(tempSection.begin() + temp_i);
+    }
+  }
+  void Deck::insert(Card card, int position) {
+    contents.insert(contents.end() - position, card);
+  }
+
   Card Deck::draw() {
     Card result = contents.back();
     contents.pop_back();
     return result;
   }
   Card Deck::reveal(int position) {
-    return contents[contents.size() - position];
+    return contents[contents.size() - position - 1];
   }
   int Deck::size() {
     return contents.size() + discard_contents.size();
