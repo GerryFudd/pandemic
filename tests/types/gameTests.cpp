@@ -157,3 +157,16 @@ TEST(get_roles_by_player_count) {
     }
   }
 }
+
+TEST(setup_and_get_players) {
+  Game game;
+  game.setup(Difficulty::easy, 3);
+  assert_equal<int>(game.get_players_in(CDC_LOCATION).size(), 3);
+}
+
+TEST(setup_and_get_research_facility) {
+  Game game;
+  game.setup();
+  assert_true(game.get_state(CDC_LOCATION).research_facility, "The CDC location starts with a research facility.");
+  assert_equal<int>(game.get_research_facility_reserve(), 5);
+}

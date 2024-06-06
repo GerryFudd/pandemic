@@ -182,11 +182,13 @@ namespace gerryfudd::types {
       }
       return result;
     }
+
+    Player::Player(Role role): role{role}, hand{card::Hand(card::player)} {}
   }
 
   int Game::infection_rate_escalation[] = INFECTION_RATE_ESCALATION;
   int Game::hand_sizes[] = HAND_SIZES;
-  Game::Game(): infection_deck{card::infect}, player_deck{card::player}, outbreaks{0}, infection_rate{0} {
+  Game::Game(): infection_deck{card::infect}, player_deck{card::player}, outbreaks{0}, infection_rate{0}, research_facility_reserve{RESEARCH_FACILITY_COUNT} {
     diseases[disease::DiseaseColor::black] = disease::DiseaseStatus();
     diseases[disease::DiseaseColor::blue] = disease::DiseaseStatus();
     diseases[disease::DiseaseColor::red] = disease::DiseaseStatus();
@@ -292,6 +294,8 @@ namespace gerryfudd::types {
       infection_deck.discard(card::Card(cursor->first, card::infect));
       player_deck.discard(card::Card(cursor->first, card::player));
     }
+    place_research_facility(CDC_LOCATION);
+
     infection_deck.shuffle();
 
     place(infection_deck.draw().name, 1);
@@ -313,7 +317,20 @@ namespace gerryfudd::types {
 
     player_deck.shuffle();
     int initial_hand_size = hand_sizes[player_count - MIN_PLAYER_COUNT];
-
+    std::vector<player::Role> roles = player::get_roles(player_count);
+    for (std::vector<player::Role>::iterator cursor = roles.begin(); cursor != roles.end(); cursor++) {
+      players.push_back(player::Player(*cursor));
+      while (players.back().hand.contents.size() < initial_hand_size) {
+        players.back().hand.contents.push_back(player_deck.draw());
+      }
+      player_locations[*cursor] = CDC_LOCATION;
+    }
+    int epidemics = BASE_EPIDEMIC_COUNT + difficulty;
+    int cards_per_epidemic = (player_deck.remaining() + epidemics) / epidemics;
+    for (int i = 0; i < epidemics; i++) {
+      player_deck.insert(card::Card(EPIDEMIC, card::player, false), cards_per_epidemic * i);
+      player_deck.shuffle(cards_per_epidemic * i, std::min(cards_per_epidemic * (i+1), player_deck.remaining()));
+    }
   }
 
   int Game::get_reserve(disease::DiseaseColor disease_color) {
@@ -342,5 +359,29 @@ namespace gerryfudd::types {
 
   city::CityState Game::get_state(std::string city_name) {
     return board[city_name];
+  }
+
+  std::vector<player::Player> Game::get_players_in(std::string city_name) {
+    std::vector<player::Player> result;
+    for (std::vector<player::Player>::iterator cursor = players.begin(); cursor != players.end(); cursor++) {
+      if (player_locations[cursor->role] == city_name) {
+        result.push_back(*cursor);
+      }
+    }
+    return result;
+  }
+
+  int Game::get_research_facility_reserve() {
+    return research_facility_reserve;
+  }
+
+  void Game::place_research_facility(std::string city_name) {
+    board[city_name].research_facility = true;
+    research_facility_reserve--;
+  }
+
+  void Game::place_research_facility(std::string city_name, std::string source_city_name) {
+    board[city_name].research_facility = true;
+    board[source_city_name].research_facility = false;
   }
 }

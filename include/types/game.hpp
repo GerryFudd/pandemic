@@ -13,6 +13,9 @@
 #define MIN_PLAYER_COUNT 2
 #define PLAYER_COUNT_OPTIONS 3
 #define HAND_SIZES { 4, 3, 2 }
+#define RESEARCH_FACILITY_COUNT 6
+
+#define CDC_LOCATION "Atlanta"
 
 #define CONTINGENCY_PLANNER "Contingency Planner"
 #define DISPATCHER "Dispatcher"
@@ -72,6 +75,12 @@ namespace gerryfudd::types {
     std::string name_of(ActionType);
     std::string description_of(ActionType, Role);
     std::vector<ActionType> get_actions(Role);
+
+    struct Player {
+      Role role;
+      card::Hand hand;
+      Player(Role);
+    };
   }
   enum Difficulty { easy, medium, hard };
   class Game {
@@ -80,10 +89,13 @@ namespace gerryfudd::types {
     std::map<disease::DiseaseColor, disease::DiseaseStatus> diseases;
     std::map<std::string, city::City> cities;
     std::map<std::string, city::CityState> board;
+    std::vector<player::Player> players;
+    std::map<player::Role, std::string> player_locations;
     card::Deck infection_deck;
     card::Deck player_deck;
     int outbreaks;
     int infection_rate;
+    int research_facility_reserve;
     int place(std::string, disease::DiseaseColor, int);
     int place(std::string, int);
   public:
@@ -97,6 +109,10 @@ namespace gerryfudd::types {
     std::map<std::string, city::City>::iterator city_end();
     int get_city_count(void);
     city::CityState get_state(std::string);
+    std::vector<player::Player> get_players_in(std::string);
+    int get_research_facility_reserve(void);
+    void place_research_facility(std::string);
+    void place_research_facility(std::string, std::string);
   };
 }
 
