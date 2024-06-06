@@ -25,6 +25,7 @@ namespace gerryfudd::types::card {
     Hand(CardType);
     friend std::ostream& operator<<(std::ostream&, const Hand&);
   };
+  int random(int);
   class Deck {
     std::vector<Card> contents;
     std::vector<Card> discard_contents;
