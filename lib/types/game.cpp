@@ -3,20 +3,6 @@
 #include <vector>
 #include <random>
 
-/*
-
-MEDIC
-
-If a disease has been cured, he automatically removes all cubes of that color from a city, simply by entering it or being there. This does not take an action.
-
-The Medic also prevents placing disease cubes (and outbreaks) of cured diseases in his location.
-
-Quarantine Specialist
-
-The Quarantine Specialist prevents both outbreaks and the placement of disease cubes in the city she is in and all cities connected to that city. She does not affect cubes placed during setup.
-* Prevent disease cube placements (and outbreaks) in the city you are in and all cities connected to it.
-*/
-
 namespace gerryfudd::types {
   namespace player {
     std::string name_of(Role role) {
