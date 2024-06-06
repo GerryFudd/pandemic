@@ -51,6 +51,23 @@ TEST(setup_and_get_cities) {
   assert_equal(sao_paulo.population, 20186000);
 }
 
+TEST(setup_and_view_city_neighbors) {
+  Game game;
+
+  game.setup();
+
+  assert_equal(game.get_city_count(), 48);
+
+  city::City istanbul = game.get_city("Istanbul"), 
+    montreal = game.get_city("Montréal"),
+    ho_chi_minh_city = game.get_city("Ho Chi Minh City"),
+    sao_paulo = game.get_city("São Paulo");
+  assert_equal<int>(istanbul.neighbors.size(), 5);
+  assert_equal<int>(montreal.neighbors.size(), 2);
+  assert_equal<int>(ho_chi_minh_city.neighbors.size(), 4);
+  assert_equal<int>(sao_paulo.neighbors.size(), 4);
+}
+
 TEST(setup_and_get_state) {
   Game game;
 

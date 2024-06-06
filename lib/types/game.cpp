@@ -222,7 +222,6 @@ namespace gerryfudd::types {
         line_index = 0;
         name = "";
         population = "";
-        line_index = 0;
       } else if (c == '\t') {
         line_index++;
       } else if (line_index == 0) {
@@ -241,6 +240,37 @@ namespace gerryfudd::types {
     fin.close();
   }
 
+  void read_neighbors_file(std::filesystem::path source_directory, std::map<std::string, city::City> *target) {
+    std::ifstream fin;
+    fin.open(source_directory / "neighbors.tsv", std::ifstream::in);
+    char c = fin.get();
+    int line_index = 0;
+    std::string cities[2];
+
+    while (fin.good()) {
+      if (c == '\n') {
+        if (line_index > 0) {
+          attach(&(*target)[cities[0]], &(*target)[cities[1]]);
+        }
+        line_index = 0;
+        cities[0] = "";
+        cities[1] = "";
+      } else if (c == '\t') {
+        line_index++;
+      } else {
+        if (cities[0].size() > 0 || !std::isspace(c)) {
+          cities[line_index] += c;
+        }
+      }
+      c = fin.get();
+    }
+    if (line_index > 0) {
+      attach(&(*target)[cities[0]], &(*target)[cities[1]]);
+    }
+
+    fin.close();
+  }
+ 
   std::filesystem::path resolve_public_path() {
     std::filesystem::path this_file = __FILE__;
     return this_file.parent_path().parent_path().parent_path() / "public";
@@ -256,6 +286,7 @@ namespace gerryfudd::types {
     read_cities_file(public_path, disease::blue, &cities);
     read_cities_file(public_path, disease::red, &cities);
     read_cities_file(public_path, disease::yellow, &cities);
+    read_neighbors_file(public_path, &cities);
     for (std::map<std::string, city::City>::iterator cursor = cities.begin(); cursor != cities.end(); ++cursor) {
       board[cursor->first] = city::CityState();
       infection_deck.discard(card::Card(cursor->first, card::infect));
