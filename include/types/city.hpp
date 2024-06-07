@@ -1,8 +1,8 @@
 #ifndef CITY_TYPES
 #define CITY_TYPES
-#include <types/disease.hpp>
 #include <vector>
 #include <map>
+#include "types/disease.hpp"
 
 namespace gerryfudd::types::city {
   struct City {

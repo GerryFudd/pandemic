@@ -1,11 +1,11 @@
 #ifndef GAME_TYPE
 #define GAME_TYPE
-#include <types/disease.hpp>
-#include <types/city.hpp>
-#include <types/card.hpp>
 #include <filesystem>
 #include <map>
 #include <string>
+#include "types/disease.hpp"
+#include "types/city.hpp"
+#include "types/card.hpp"
 
 #define BASE_EPIDEMIC_COUNT 4
 #define INFECTION_RATE_SIZE BASE_EPIDEMIC_COUNT + 3

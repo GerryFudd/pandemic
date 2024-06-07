@@ -1,7 +1,8 @@
-#include <types/game.hpp>
 #include <fstream>
 #include <vector>
 #include <random>
+#include "types/game.hpp"
+#include "data/city_data.hpp"
 
 namespace gerryfudd::types {
   namespace player {
@@ -267,11 +268,6 @@ namespace gerryfudd::types {
 
     fin.close();
   }
- 
-  std::filesystem::path resolve_public_path() {
-    std::filesystem::path this_file = __FILE__;
-    return this_file.parent_path().parent_path().parent_path() / "public";
-  }
 
   void Game::setup() {
     setup(easy, MIN_PLAYER_COUNT);
@@ -286,12 +282,7 @@ namespace gerryfudd::types {
     players.clear();
     player_locations.clear();
 
-    std::filesystem::path public_path = resolve_public_path();
-    read_cities_file(public_path, disease::black, &cities);
-    read_cities_file(public_path, disease::blue, &cities);
-    read_cities_file(public_path, disease::red, &cities);
-    read_cities_file(public_path, disease::yellow, &cities);
-    read_neighbors_file(public_path, &cities);
+    data::city::load_cities(&cities);
     for (std::map<std::string, city::City>::iterator cursor = cities.begin(); cursor != cities.end(); ++cursor) {
       board[cursor->first] = city::CityState();
       infection_deck.discard(card::Card(cursor->first, card::infect));
