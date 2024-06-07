@@ -1,4 +1,3 @@
-#include <fstream>
 #include <vector>
 #include <random>
 #include "types/game.hpp"
@@ -202,71 +201,6 @@ namespace gerryfudd::types {
 
   int Game::place(std::string target, int quantity) {
     return place(target, cities[target].color, quantity);
-  }
-
-  void read_cities_file(std::filesystem::path source_directory, disease::DiseaseColor color, std::map<std::string, city::City> *target) {
-    std::ifstream fin;
-    fin.open(source_directory / (disease::name_of(color) + "_cities.tsv"), std::ifstream::in);
-
-    char c;
-    std::string name, population;
-    int line_index = 0;
-    c = fin.get();
-    while (fin.good()) {
-      if (c == '\n') {
-        if (line_index > 0) {
-          (*target)[name] = city::City{name, color, std::stoi(population)};
-        }
-        line_index = 0;
-        name = "";
-        population = "";
-      } else if (c == '\t') {
-        line_index++;
-      } else if (line_index == 0) {
-        if (name.size() > 0 || !std::isspace(c)) {
-          name += c;
-        }
-      } else if (line_index == 1) {
-        population += c;
-      }
-      c = fin.get();
-    }
-
-    if (line_index > 0) {
-      (*target)[name] = city::City{name, color, std::stoi(population)};
-    }
-    fin.close();
-  }
-
-  void read_neighbors_file(std::filesystem::path source_directory, std::map<std::string, city::City> *target) {
-    std::ifstream fin;
-    fin.open(source_directory / "neighbors.tsv", std::ifstream::in);
-    char c = fin.get();
-    int line_index = 0;
-    std::string cities[2];
-
-    while (fin.good()) {
-      if (c == '\n') {
-        if (line_index > 0) {
-          attach(&(*target)[cities[0]], &(*target)[cities[1]]);
-        }
-        line_index = 0;
-        cities[0] = "";
-        cities[1] = "";
-      } else if (c == '\t') {
-        line_index++;
-      } else {
-        if (cities[0].size() > 0 || !std::isspace(c)) {
-          cities[line_index] += c;
-        }
-      }
-      c = fin.get();
-    }
-    if (line_index > 0) {
-      attach(&(*target)[cities[0]], &(*target)[cities[1]]);
-    }
-
-    fin.close();
   }
 
   void Game::setup() {
