@@ -188,12 +188,7 @@ namespace gerryfudd::types {
 
   int Game::infection_rate_escalation[] = INFECTION_RATE_ESCALATION;
   int Game::hand_sizes[] = HAND_SIZES;
-  Game::Game(): infection_deck{card::infect}, player_deck{card::player}, outbreaks{0}, infection_rate{0}, research_facility_reserve{RESEARCH_FACILITY_COUNT} {
-    diseases[disease::DiseaseColor::black] = disease::DiseaseStatus();
-    diseases[disease::DiseaseColor::blue] = disease::DiseaseStatus();
-    diseases[disease::DiseaseColor::red] = disease::DiseaseStatus();
-    diseases[disease::DiseaseColor::yellow] = disease::DiseaseStatus();
-  }
+  Game::Game(): infection_deck{card::infect}, player_deck{card::player}, outbreaks{0}, infection_rate{0}, research_facility_reserve{RESEARCH_FACILITY_COUNT} {}
 
   int Game::place(std::string target, disease::DiseaseColor color, int quantity) {
     if (board[target].prevent_placement) {
@@ -283,6 +278,14 @@ namespace gerryfudd::types {
   }
 
   void Game::setup(Difficulty difficulty, int player_count) {
+    diseases.clear();
+    cities.clear();
+    board.clear();
+    infection_deck.clear();
+    player_deck.clear();
+    players.clear();
+    player_locations.clear();
+
     std::filesystem::path public_path = resolve_public_path();
     read_cities_file(public_path, disease::black, &cities);
     read_cities_file(public_path, disease::blue, &cities);

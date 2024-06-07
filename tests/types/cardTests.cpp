@@ -135,3 +135,25 @@ TEST(hand_is_streamable) {
 
   assert_equal<std::string>(captor.str(), "Player hand: baz, bar, foo");
 }
+
+TEST(clear_deck) {
+  std::string card_names[] = {"foo", "bar", "baz"};
+
+  gerryfudd::types::card::Deck deck{gerryfudd::types::card::infect};
+  assert_equal(deck.size(), 0);
+  assert_equal(deck.remaining(), 0);
+
+  for (int i = 0; i < 3; i++) {
+    deck.discard(gerryfudd::types::card::Card(card_names[i], gerryfudd::types::card::infect));
+    assert_equal(deck.size(), i + 1);
+    assert_equal(deck.remaining(), 0);
+  }
+
+  deck.shuffle();
+  assert_equal(deck.size(), 3);
+  assert_equal(deck.remaining(), 3);
+
+  deck.clear();
+  assert_equal(deck.size(), 0);
+  assert_equal(deck.remaining(), 0);
+}

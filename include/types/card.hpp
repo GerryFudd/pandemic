@@ -40,6 +40,7 @@ namespace gerryfudd::types::card {
     Card reveal(int);
     int size(void);
     int remaining(void);
+    void clear(void);
   };
 }
 

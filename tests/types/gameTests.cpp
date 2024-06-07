@@ -160,8 +160,12 @@ TEST(get_roles_by_player_count) {
 
 TEST(setup_and_get_players) {
   Game game;
+  game.setup(Difficulty::easy, 2);
+  assert_equal<int>(game.get_players_in(CDC_LOCATION).size(), 2);
   game.setup(Difficulty::easy, 3);
   assert_equal<int>(game.get_players_in(CDC_LOCATION).size(), 3);
+  game.setup(Difficulty::easy, 4);
+  assert_equal<int>(game.get_players_in(CDC_LOCATION).size(), 4);
 }
 
 TEST(setup_and_get_research_facility) {

@@ -87,4 +87,9 @@ namespace gerryfudd::types::card {
   int Deck::remaining() {
     return contents.size();
   }
+
+  void Deck::clear() {
+    contents.clear();
+    discard_contents.clear();
+  }
 }
