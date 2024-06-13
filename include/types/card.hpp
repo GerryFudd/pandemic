@@ -10,28 +10,30 @@
 #define EPIDEMIC "Epidemic"
 
 namespace gerryfudd::types::card {
-  enum CardType { player, infect };
+  enum DeckType { player, infect };
+  std::string name_of(DeckType);
+  enum CardType { one_quiet_night, resilient_population, government_grant, airlift, epidemic, city };
   std::string name_of(CardType);
   struct Card {
     std::string name;
+    DeckType deck_type;
     CardType type;
-    bool city;
-    Card(std::string, CardType);
-    Card(std::string, CardType, bool);
+    Card(std::string, DeckType);
+    Card(std::string, DeckType, CardType);
   };
   struct Hand {
-    CardType type;
+    DeckType deck_type;
     std::vector<Card> contents;
-    Hand(CardType);
+    Hand(DeckType);
     friend std::ostream& operator<<(std::ostream&, const Hand&);
   };
   int random(int);
   class Deck {
     std::vector<Card> contents;
     std::vector<Card> discard_contents;
-    CardType type;
+    DeckType deck_type;
   public:
-    Deck(CardType);
+    Deck(DeckType);
     void discard(Card);
     void shuffle(void);
     void shuffle(int, int);

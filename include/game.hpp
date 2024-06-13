@@ -18,7 +18,7 @@
 
 #define CDC_LOCATION "Atlanta"
 
-  using namespace gerryfudd::types;
+using namespace gerryfudd::types;
 
 namespace gerryfudd::core {
   enum Difficulty { easy, medium, hard };

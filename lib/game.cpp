@@ -73,7 +73,7 @@ namespace gerryfudd::core {
     int epidemics = BASE_EPIDEMIC_COUNT + difficulty;
     int cards_per_epidemic = (player_deck.remaining() + epidemics) / epidemics;
     for (int i = 0; i < epidemics; i++) {
-      player_deck.insert(card::Card(EPIDEMIC, card::player, false), cards_per_epidemic * i);
+      player_deck.insert(card::Card(EPIDEMIC, card::player, card::epidemic), cards_per_epidemic * i);
       player_deck.shuffle(cards_per_epidemic * i, std::min(cards_per_epidemic * (i+1), player_deck.remaining()));
     }
   }

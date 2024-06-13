@@ -4,8 +4,8 @@
 #include <iostream>
 
 namespace gerryfudd::types::card {
-  std::string name_of(CardType card_type) {
-    switch (card_type)
+  std::string name_of(DeckType deck_type) {
+    switch (deck_type)
     {
     case infect:
       return "Infect";
@@ -15,13 +15,31 @@ namespace gerryfudd::types::card {
       throw std::invalid_argument("This card type doesn't have a name");
     }
   }
-  Card::Card(std::string name, CardType type): Card::Card(name, type, true) {}
-  Card::Card(std::string name, CardType type, bool city): name{name}, type{type}, city{city} {}
+  std::string name_of(CardType card_type) {
+    switch(card_type) {
+      case one_quiet_night:
+        return ONE_QUIET_NIGHT;
+      case resilient_population:
+        return RESILIENT_POPULATION;
+      case government_grant:
+        return GOVERNMENT_GRANT;
+      case airlift:
+        return AIRLIFT;
+      case epidemic:
+        return EPIDEMIC;
+      case city:
+        return "City";
+      default:
+        throw std::invalid_argument("This is not a card type.");
+    }
+  }
+  Card::Card(std::string name, DeckType deck_type): Card::Card(name, deck_type, city) {}
+  Card::Card(std::string name, DeckType deck_type, CardType type): name{name}, deck_type{deck_type}, type{type} {}
 
 
-  Hand::Hand(CardType type): type{type} {}
+  Hand::Hand(DeckType deck_type): deck_type{deck_type} {}
   std::ostream& operator<<(std::ostream& out, const Hand &hand) {
-    out << name_of(hand.type);
+    out << name_of(hand.deck_type);
     out << " hand: ";
     bool middle = false;
     for (auto cursor = hand.contents.rbegin(); cursor != hand.contents.rend(); cursor++) {
@@ -35,9 +53,9 @@ namespace gerryfudd::types::card {
     return out;
   }
 
-  Deck::Deck(CardType type): type{type} {}
+  Deck::Deck(DeckType deck_type): deck_type{deck_type} {}
   void Deck::discard(Card card) {
-    if (type != card.type) {
+    if (deck_type != card.deck_type) {
       throw std::invalid_argument("This deck only accepts one type of card.");
     }
     discard_contents.push_back(card);
