@@ -289,7 +289,7 @@ namespace gerryfudd::core {
     throw std::invalid_argument("This player can't drive to " + destination);
   }
 
-  void Game::charter_flight(player::Role role, std::string destination) {
+  void Game::direct_flight(player::Role role, std::string destination) {
     remove_player_card(role, destination);
     remove_player_with_role(role);
     place_player(role, destination);

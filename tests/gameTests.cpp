@@ -290,7 +290,7 @@ TEST(charter_flight_quarantine_specialist) {
   game.add_role(player::quarantine_specialist);
   game.add_card(player::quarantine_specialist, card::Card("Istanbul", card::player, card::city));
   std::string destination = "Istanbul";
-  game.charter_flight(player::quarantine_specialist, destination);
+  game.direct_flight(player::quarantine_specialist, destination);
 
   // The starting CDC location is unprotected
   assert_false(game.get_state(CDC_LOCATION).prevent_placement(disease::black), "Quarantine specialist no longer prevents black cubes in the city they leave.");
@@ -342,7 +342,7 @@ TEST(charter_flight_requires_card) {
 
   bool exception_thrown = false;
   try {
-    game.charter_flight(game.get_player(player_index + 1).role, destination);
+    game.direct_flight(game.get_player(player_index + 1).role, destination);
   } catch (std::invalid_argument e) {
     assert_equal<std::string>(e.what(), "This player doesn't have this card.");
     exception_thrown = true;
