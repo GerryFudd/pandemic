@@ -106,6 +106,10 @@ namespace gerryfudd::types::card {
     return contents.size();
   }
 
+  std::vector<Card> Deck::get_discard_contents() {
+    return discard_contents;
+  }
+
   void Deck::clear() {
     contents.clear();
     discard_contents.clear();

@@ -157,3 +157,20 @@ TEST(clear_deck) {
   assert_equal(deck.size(), 0);
   assert_equal(deck.remaining(), 0);
 }
+
+TEST(get_discard_contents) {
+  gerryfudd::types::card::Deck deck(gerryfudd::types::card::infect);
+
+  deck.discard(gerryfudd::types::card::Card("foo", gerryfudd::types::card::infect));
+  deck.discard(gerryfudd::types::card::Card("bar", gerryfudd::types::card::infect));
+  deck.discard(gerryfudd::types::card::Card("baz", gerryfudd::types::card::infect));
+
+  // This method returns a copy of the contents.
+  std::vector<gerryfudd::types::card::Card> discard_copy = deck.get_discard_contents();
+  assert_equal<std::string>(discard_copy[0].name, "foo");
+  assert_equal<std::string>(discard_copy[1].name, "bar");
+  assert_equal<std::string>(discard_copy[2].name, "baz");
+  // Modifying this copy doesn't alter the original
+  discard_copy.pop_back();
+  assert_equal(discard_copy.size(), deck.get_discard_contents().size() - 1);
+}

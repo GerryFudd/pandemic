@@ -411,3 +411,10 @@ TEST(charter_flight_requires_card) {
   }
   assert_true(exception_thrown, "Attempting an illegal charter flight should throw an exception.");
 }
+
+TEST(get_infection_discard) {
+  Game game;
+  game.setup();
+
+  assert_equal<int>(game.get_infection_discard().size(), 9);
+}

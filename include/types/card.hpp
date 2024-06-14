@@ -43,6 +43,7 @@ namespace gerryfudd::types::card {
     int size(void);
     int remaining(void);
     void clear(void);
+    std::vector<Card> get_discard_contents(void);
   };
 }
 

@@ -46,17 +46,28 @@ namespace gerryfudd::core {
 
     infection_deck.shuffle();
 
-    place(infection_deck.draw().name, 1);
-    place(infection_deck.draw().name, 1);
-    place(infection_deck.draw().name, 1);
+    infection_deck.discard(infection_deck.draw());
+    place(infection_deck.get_discard_contents().back().name, 1);
+    infection_deck.discard(infection_deck.draw());
+    place(infection_deck.get_discard_contents().back().name, 1);
+    infection_deck.discard(infection_deck.draw());
+    place(infection_deck.get_discard_contents().back().name, 1);
 
-    place(infection_deck.draw().name, 2);
-    place(infection_deck.draw().name, 2);
-    place(infection_deck.draw().name, 2);
 
-    place(infection_deck.draw().name, 3);
-    place(infection_deck.draw().name, 3);
-    place(infection_deck.draw().name, 3);
+    infection_deck.discard(infection_deck.draw());
+    place(infection_deck.get_discard_contents().back().name, 2);
+    infection_deck.discard(infection_deck.draw());
+    place(infection_deck.get_discard_contents().back().name, 2);
+    infection_deck.discard(infection_deck.draw());
+    place(infection_deck.get_discard_contents().back().name, 2);
+
+
+    infection_deck.discard(infection_deck.draw());
+    place(infection_deck.get_discard_contents().back().name, 3);
+    infection_deck.discard(infection_deck.draw());
+    place(infection_deck.get_discard_contents().back().name, 3);
+    infection_deck.discard(infection_deck.draw());
+    place(infection_deck.get_discard_contents().back().name, 3);
     
     player_deck.discard(card::Card(ONE_QUIET_NIGHT, card::player));
     player_deck.discard(card::Card(RESILIENT_POPULATION, card::player));
@@ -275,6 +286,9 @@ namespace gerryfudd::core {
       }
     }
     throw std::invalid_argument("This player doesn't have this card.");
+  }
+  std::vector<card::Card> Game::get_infection_discard() {
+    return infection_deck.get_discard_contents();
   }
 
   void Game::drive(player::Role role, std::string destination) {

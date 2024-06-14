@@ -65,6 +65,7 @@ namespace gerryfudd::core {
     city::City get_city(player::Role);
     bool draw_infection_card(void);
     int get_infection_rate(void);
+    std::vector<card::Card> get_infection_discard(void);
 
     void drive(player::Role, std::string);
     void direct_flight(player::Role, std::string);
