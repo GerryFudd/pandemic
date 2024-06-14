@@ -281,7 +281,8 @@ namespace gerryfudd::core {
     std::string origin = player_locations[role];
     for (std::vector<city::City>::iterator cursor = cities[origin].neighbors.begin(); cursor != cities[origin].neighbors.end(); cursor++) {
       if (cursor->name == destination) {
-        player_locations[role] = destination;
+        remove_player_with_role(role);
+        place_player(role, destination);
         return;
       }
     }

@@ -225,6 +225,46 @@ TEST(drive) {
   }
 }
 
+TEST(drive_requires_neighboring_city) {
+  Game game;
+  game.setup(easy, 4);
+  
+  player::Role first_role = game.get_player(0).role;
+
+  bool exception_thrown = false;
+
+  try {
+    game.drive(first_role, "Istanbul");
+  } catch (std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "This player can't drive to Istanbul");
+  }
+  assert_true(exception_thrown, "An exception should be thrown if you attempt an illegal drive.");
+}
+
+TEST(drive_updates_protection) {
+  Game game;
+  game.setup(easy, 4);
+  game.add_role(player::quarantine_specialist);
+
+  std::string destination = game.get_city(CDC_LOCATION).neighbors[0].name;
+  game.drive(player::quarantine_specialist, destination);
+
+  // The destination is protected
+  assert_true(game.get_state(destination).prevent_placement(disease::black), "Quarantine specialist should prevent black cubes in the city they occupy.");
+  assert_true(game.get_state(destination).prevent_placement(disease::blue), "Quarantine specialist should prevent blue cubes in the city they occupy.");
+  assert_true(game.get_state(destination).prevent_placement(disease::red), "Quarantine specialist should prevent red cubes in the city they occupy.");
+  assert_true(game.get_state(destination).prevent_placement(disease::yellow), "Quarantine specialist should prevent yellow cubes in the city they occupy.");
+
+  city::City destination_city = game.get_city(destination);
+  for (std::vector<city::City>::iterator cursor = destination_city.neighbors.begin(); cursor != destination_city.neighbors.end(); cursor++) {
+    assert_true(game.get_state(cursor->name).prevent_placement(disease::black), "Quarantine specialist should prevent black cubes in all neighboring cities.");
+    assert_true(game.get_state(cursor->name).prevent_placement(disease::blue), "Quarantine specialist should prevent blue cubes in all neighboring cities.");
+    assert_true(game.get_state(cursor->name).prevent_placement(disease::red), "Quarantine specialist should prevent red cubes in all neighboring cities.");
+    assert_true(game.get_state(cursor->name).prevent_placement(disease::yellow), "Quarantine specialist should prevent yellow cubes in all neighboring cities.");
+  }
+}
+
 TEST(setup_with_quarantine_specialist) {
   Game game;
   game.setup();
