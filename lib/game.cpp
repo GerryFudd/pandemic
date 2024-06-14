@@ -294,6 +294,12 @@ namespace gerryfudd::core {
     remove_player_with_role(role);
     place_player(role, destination);
   }
+
+  void Game::charter_flight(player::Role role, std::string destination) {
+    remove_player_card(role, player_locations[role]);
+    remove_player_with_role(role);
+    place_player(role, destination);
+  }
   bool Game::draw_player_card(player::Role role) {
     if (player_deck.size() == 0) {
       return true;

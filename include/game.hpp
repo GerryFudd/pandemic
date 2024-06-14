@@ -68,6 +68,7 @@ namespace gerryfudd::core {
 
     void drive(player::Role, std::string);
     void direct_flight(player::Role, std::string);
+    void charter_flight(player::Role, std::string);
 
     bool draw_player_card(player::Role);
   };
