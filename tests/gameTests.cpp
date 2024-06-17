@@ -729,6 +729,249 @@ TEST(share_as_researcher_requires_same_city) {
   assert_true(exception_thrown, "Sharing a card should be illegal if the players aren't in the same city.");
 }
 
+TEST(cure_requires_five_cards_in_hand) {
+  Game game;
+  game.setup();
+  
+  // Suppose that player 0 has four of these cards.
+  std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai", "Delhi"};
+  for (int i = 0; i < 4; i++) {
+    game.add_card(game.get_player(0).role, card::Card(to_discard[i], card::player));
+  }
+  std::vector<card::Card> cards_in_hand = game.get_player(0).hand.contents;
+  
+  bool exception_thrown = false;
+  try {
+    game.cure(game.get_player(0).role, to_discard);
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "This player doesn't have this card.");
+  }
+
+  assert_true(exception_thrown, "Attempting to cure with cards that aren't in your hand should be illegal.");
+  // The player's hand shouldn't be different after a failure.
+  assert_equal<int>(game.get_player(0).hand.contents.size(), cards_in_hand.size());
+  for (int i = 0; i < cards_in_hand.size(); i++) {
+    assert_equal<std::string>(game.get_player(0).hand.contents[i].name, cards_in_hand[i].name);
+  }
+}
+
+TEST(cure_requires_five_cards_of_the_same_color) {
+  Game game;
+  game.setup();
+  
+  // Suppose that player 0 has all of these cards.
+  std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai", "Atlanta"};
+  for (int i = 0; i < 5; i++) {
+    game.add_card(game.get_player(0).role, card::Card(to_discard[i], card::player));
+  }
+  std::vector<card::Card> cards_in_hand = game.get_player(0).hand.contents;
+  
+  bool exception_thrown = false;
+  try {
+    game.cure(game.get_player(0).role, to_discard);
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "Curing a disease requires that all discarded cards share a color.");
+  }
+
+  assert_true(exception_thrown, "Attempting to cure with cards that aren't the same color should be illegal.");
+  // The player's hand shouldn't be different after a failure.
+  assert_equal<int>(game.get_player(0).hand.contents.size(), cards_in_hand.size());
+  for (int i = 0; i < cards_in_hand.size(); i++) {
+    assert_equal<std::string>(game.get_player(0).hand.contents[i].name, cards_in_hand[i].name);
+  }
+}
+
+TEST(cure_requires_research_facility) {
+  Game game;
+  game.setup();
+  // Move player 0 away from the starting location.
+  game.drive(game.get_player(0).role, game.get_city(CDC_LOCATION).neighbors[0].name);
+  
+  // Suppose that player 0 has all of these cards.
+  std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai", "Delhi"};
+  for (int i = 0; i < 5; i++) {
+    game.add_card(game.get_player(0).role, card::Card(to_discard[i], card::player));
+  }
+  std::vector<card::Card> cards_in_hand = game.get_player(0).hand.contents;
+  
+  bool exception_thrown = false;
+  try {
+    game.cure(game.get_player(0).role, to_discard);
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "Curing a disease may only occur in a city with a research facility.");
+  }
+
+  assert_true(exception_thrown, "Attempting to cure without a research facility should be illegal.");
+  // The player's hand shouldn't be different after a failure.
+  assert_equal<int>(game.get_player(0).hand.contents.size(), cards_in_hand.size());
+  for (int i = 0; i < cards_in_hand.size(); i++) {
+    assert_equal<std::string>(game.get_player(0).hand.contents[i].name, cards_in_hand[i].name);
+  }
+}
+
+TEST(cure) {
+  Game game;
+  game.setup();
+  
+  // Suppose that player 0 has all of these cards.
+  std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai", "Delhi"};
+  for (int i = 0; i < 5; i++) {
+    game.add_card(game.get_player(0).role, card::Card(to_discard[i], card::player));
+  }
+  std::vector<card::Card> cards_in_hand = game.get_player(0).hand.contents;
+  
+  // Cure the disease
+  game.cure(game.get_player(0).role, to_discard);
+
+  // The player's hand should have discarded the cards.
+  assert_equal<int>(game.get_player(0).hand.contents.size(), cards_in_hand.size() - 5);
+  bool discarded;
+  for (int i = 0; i < cards_in_hand.size(); i++) {
+    discarded = false;
+    for (int j = 0; j < 5; j++) {
+      if (cards_in_hand[i].name == to_discard[j]) {
+        discarded = true;
+        std::string message = "The player's hand shouldn't contain " + to_discard[j];
+        assert_false(card::contains(game.get_player(0).hand, to_discard[j]), message.c_str());
+        break;
+      }
+    }
+    if (!discarded) {
+      std::string message = "The player's hand should still contain " + cards_in_hand[i].name;
+      assert_true(card::contains(game.get_player(0).hand, cards_in_hand[i].name), message.c_str());
+    }
+  }
+  assert_true(game.get_status(disease::black).cured, "The disease should be cured.");
+}
+
+TEST(cure_as_scientist_requires_four_cards_in_hand) {
+  Game game;
+  game.setup();
+  game.add_role(player::scientist);
+  
+  // Suppose that the scientist has three of these cards.
+  std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai"};
+  for (int i = 0; i < 3; i++) {
+    game.add_card(player::scientist, card::Card(to_discard[i], card::player));
+  }
+  std::vector<card::Card> cards_in_hand = game.get_player(player::scientist).hand.contents;
+  
+  bool exception_thrown = false;
+  try {
+    game.scientist_cure(to_discard);
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "This player doesn't have this card.");
+  }
+
+  assert_true(exception_thrown, "Attempting to cure with cards that aren't in your hand should be illegal.");
+  // The scientist's hand shouldn't be different after a failure.
+  card::Hand hand_after_failure = game.get_player(player::scientist).hand;
+  assert_equal<int>(hand_after_failure.contents.size(), cards_in_hand.size());
+  for (int i = 0; i < cards_in_hand.size(); i++) {
+    assert_equal<std::string>(hand_after_failure.contents[i].name, cards_in_hand[i].name);
+  }
+}
+
+TEST(cure_as_scientist_requires_four_cards_of_the_same_color) {
+  Game game;
+  game.setup();
+  game.add_role(player::scientist);
+  
+  // Suppose that the scientists has all of these cards.
+  std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Atlanta"};
+  for (int i = 0; i < 4; i++) {
+    game.add_card(player::scientist, card::Card(to_discard[i], card::player));
+  }
+  std::vector<card::Card> cards_in_hand = game.get_player(player::scientist).hand.contents;
+  
+  bool exception_thrown = false;
+  try {
+    game.scientist_cure(to_discard);
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "Curing a disease requires that all discarded cards share a color.");
+  }
+
+  assert_true(exception_thrown, "Attempting to cure with cards that aren't the same color should be illegal.");
+  // The scientist's hand shouldn't be different after a failure.
+  card::Hand hand_after_failure = game.get_player(player::scientist).hand;
+  assert_equal<int>(hand_after_failure.contents.size(), cards_in_hand.size());
+  for (int i = 0; i < cards_in_hand.size(); i++) {
+    assert_equal<std::string>(hand_after_failure.contents[i].name, cards_in_hand[i].name);
+  }
+}
+
+TEST(cure_as_scientist_requires_research_facility) {
+  Game game;
+  game.setup();
+  game.add_role(player::scientist);
+  // Move the scientist away from the starting location.
+  game.drive(player::scientist, game.get_city(CDC_LOCATION).neighbors[0].name);
+  
+  // Suppose that the scientists has all of these cards.
+  std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai"};
+  for (int i = 0; i < 4; i++) {
+    game.add_card(player::scientist, card::Card(to_discard[i], card::player));
+  }
+  std::vector<card::Card> cards_in_hand = game.get_player(player::scientist).hand.contents;
+  
+  bool exception_thrown = false;
+  try {
+    game.scientist_cure(to_discard);
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "Curing a disease may only occur in a city with a research facility.");
+  }
+
+  assert_true(exception_thrown, "Attempting to cure without a research facility should be illegal.");
+  // The scientist's hand shouldn't be different after a failure.
+  card::Hand hand_after_failure = game.get_player(player::scientist).hand;
+  assert_equal<int>(hand_after_failure.contents.size(), cards_in_hand.size());
+  for (int i = 0; i < cards_in_hand.size(); i++) {
+    assert_equal<std::string>(hand_after_failure.contents[i].name, cards_in_hand[i].name);
+  }
+}
+
+TEST(cure_as_scientist) {
+  Game game;
+  game.setup();
+  game.add_role(player::scientist);
+  
+  // Suppose that the scientist has all of these cards.
+  std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai"};
+  for (int i = 0; i < 4; i++) {
+    game.add_card(player::scientist, card::Card(to_discard[i], card::player));
+  }
+  std::vector<card::Card> cards_in_hand = game.get_player(player::scientist).hand.contents;
+  
+  // Cure the disease
+  game.scientist_cure(to_discard);
+
+  // The scientist's hand should have discarded the cards.
+  assert_equal<int>(game.get_player(player::scientist).hand.contents.size(), cards_in_hand.size() - 4);
+  bool discarded;
+  for (int i = 0; i < cards_in_hand.size(); i++) {
+    discarded = false;
+    for (int j = 0; j < 4; j++) {
+      if (cards_in_hand[i].name == to_discard[j]) {
+        discarded = true;
+        std::string message = "The scientist's hand shouldn't contain " + to_discard[j];
+        assert_false(card::contains(game.get_player(player::scientist).hand, to_discard[j]), message.c_str());
+        break;
+      }
+    }
+    if (!discarded) {
+      std::string message = "The scientist's hand should still contain " + cards_in_hand[i].name;
+      assert_true(card::contains(game.get_player(player::scientist).hand, cards_in_hand[i].name), message.c_str());
+    }
+  }
+  assert_true(game.get_status(disease::black).cured, "The disease should be cured.");
+}
+
 TEST(get_infection_discard) {
   Game game;
   game.setup();

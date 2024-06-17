@@ -158,9 +158,12 @@ namespace gerryfudd::core {
     place_player(role, CDC_LOCATION);
   }
   void Game::add_card(player::Role role, card::Card card) {
-    for (std::vector<player::Player>::iterator cursor = players.begin(); cursor != players.end(); cursor++) {
-      if (cursor->role == role) {
-        cursor->hand.contents.push_back(card);
+    for (std::vector<player::Player>::iterator player_cursor = players.begin(); player_cursor != players.end(); player_cursor++) {
+      if (player_cursor->role == role) {
+        if (card::contains(player_cursor->hand, card.name)) {
+          return;
+        }
+        player_cursor->hand.contents.push_back(card);
         return;
       }
     }
@@ -241,6 +244,9 @@ namespace gerryfudd::core {
 
   int Game::get_infection_rate() {
     return infection_rate_escalation[infection_rate];
+  }
+  disease::DiseaseStatus Game::get_status(disease::DiseaseColor color) {
+    return diseases[color];
   }
   bool Game::place_disease(std::string city_name, disease::DiseaseColor color, std::vector<std::string>& executed_outbreaks) {
     if (board[city_name].prevent_placement(color)) {
@@ -357,6 +363,48 @@ namespace gerryfudd::core {
       throw std::invalid_argument("Players must be in the same city to share cards.");
     }
     add_card(target, remove_player_card(player::researcher, card_name));
+  }
+  void Game::cure(player::Role role, std::string matching_cards[5]) {
+    if (!board[player_locations[role]].research_facility) {
+      throw std::invalid_argument("Curing a disease may only occur in a city with a research facility.");
+    }
+    disease::DiseaseColor disease_to_cure;
+    int i;
+    for (i = 0; i < 5; i++) {
+      if (i == 0) {
+        disease_to_cure = cities[matching_cards[i]].color;
+      } else if (disease_to_cure != cities[matching_cards[i]].color) {
+        throw std::invalid_argument("Curing a disease requires that all discarded cards share a color.");
+      }
+      if (!card::contains(get_player(role).hand, matching_cards[i])) {
+        throw std::invalid_argument("This player doesn't have this card.");
+      }
+    }
+    for (i = 0; i < 5; i++) {
+      player_deck.discard(remove_player_card(role, matching_cards[i]));
+    }
+    diseases[disease_to_cure].cured = true;
+  }
+  void Game::scientist_cure(std::string matching_cards[4]) {
+    if (!board[player_locations[player::scientist]].research_facility) {
+      throw std::invalid_argument("Curing a disease may only occur in a city with a research facility.");
+    }
+    disease::DiseaseColor disease_to_cure;
+    int i;
+    for (i = 0; i < 4; i++) {
+      if (i == 0) {
+        disease_to_cure = cities[matching_cards[i]].color;
+      } else if (disease_to_cure != cities[matching_cards[i]].color) {
+        throw std::invalid_argument("Curing a disease requires that all discarded cards share a color.");
+      }
+      if (!card::contains(get_player(player::scientist).hand, matching_cards[i])) {
+        throw std::invalid_argument("This player doesn't have this card.");
+      }
+    }
+    for (i = 0; i < 4; i++) {
+      player_deck.discard(remove_player_card(player::scientist, matching_cards[i]));
+    }
+    diseases[disease_to_cure].cured = true;
   }
 
   bool Game::draw_player_card(player::Role role) {

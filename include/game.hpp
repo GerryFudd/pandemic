@@ -68,6 +68,7 @@ namespace gerryfudd::core {
     bool draw_infection_card(void);
     int get_infection_rate(void);
     std::vector<card::Card> get_infection_discard(void);
+    disease::DiseaseStatus get_status(disease::DiseaseColor);
 
     void drive(player::Role, std::string);
     void direct_flight(player::Role, std::string);
@@ -81,6 +82,8 @@ namespace gerryfudd::core {
     void treat(player::Role, disease::DiseaseColor);
     void share(player::Role, player::Role);
     void researcher_share(std::string, player::Role);
+    void cure(player::Role, std::string[5]);
+    void scientist_cure(std::string[4]);
 
     bool draw_player_card(player::Role);
   };

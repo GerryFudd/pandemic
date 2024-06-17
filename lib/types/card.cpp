@@ -53,6 +53,15 @@ namespace gerryfudd::types::card {
     return out;
   }
 
+  bool contains(Hand hand, std::string card_name) {
+    for (std::vector<Card>::iterator cursor = hand.contents.begin(); cursor != hand.contents.end(); cursor++) {
+      if (cursor->name == card_name) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   Deck::Deck(DeckType deck_type): deck_type{deck_type} {}
   void Deck::discard(Card card) {
     if (deck_type != card.deck_type) {

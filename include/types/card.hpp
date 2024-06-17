@@ -27,6 +27,7 @@ namespace gerryfudd::types::card {
     Hand(DeckType);
     friend std::ostream& operator<<(std::ostream&, const Hand&);
   };
+  bool contains(Hand, std::string);
   int random(int);
   class Deck {
     std::vector<Card> contents;
