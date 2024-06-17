@@ -139,6 +139,10 @@ namespace gerryfudd::core {
     player_locations[role] = destination;
     update_protections(destination);
   }
+  void Game::move(player::Role role, std::string destination) {
+    remove_player_with_role(role);
+    place_player(role, destination);
+  }
   void Game::add_role(player::Role role) {
     for (std::vector<player::Player>::iterator cursor = players.begin(); cursor != players.end(); cursor++) {
       if (cursor->role == role) {
@@ -198,6 +202,9 @@ namespace gerryfudd::core {
       }
     }
     return result;
+  }
+  std::string Game::get_location(player::Role role) {
+    return player_locations[role];
   }
 
   int Game::get_research_facility_reserve() {
@@ -272,14 +279,14 @@ namespace gerryfudd::core {
     infection_deck.discard(infection_card);
     return false;
   }
-  void Game::remove_player_card(player::Role role, std::string card_name) {
+  card::Card Game::remove_player_card(player::Role role, std::string card_name) {
     for (std::vector<player::Player>::iterator player_cursor = players.begin(); player_cursor != players.end(); player_cursor++) {
       if (player_cursor->role == role) {
         for (std::vector<card::Card>::iterator card_cursor = player_cursor->hand.contents.begin(); card_cursor != player_cursor->hand.contents.end(); card_cursor++) {
           if (card_cursor->name == card_name) {
-            player_deck.discard(*card_cursor);
+            card::Card result = *card_cursor;
             player_cursor->hand.contents.erase(card_cursor);
-            return;
+            return result;
           }
         }
         break;
@@ -295,8 +302,7 @@ namespace gerryfudd::core {
     std::string origin = player_locations[role];
     for (std::vector<city::City>::iterator cursor = cities[origin].neighbors.begin(); cursor != cities[origin].neighbors.end(); cursor++) {
       if (cursor->name == destination) {
-        remove_player_with_role(role);
-        place_player(role, destination);
+        move(role, destination);
         return;
       }
     }
@@ -304,16 +310,55 @@ namespace gerryfudd::core {
   }
 
   void Game::direct_flight(player::Role role, std::string destination) {
-    remove_player_card(role, destination);
-    remove_player_with_role(role);
-    place_player(role, destination);
+    player_deck.discard(remove_player_card(role, destination));
+    move(role, destination);
   }
 
   void Game::charter_flight(player::Role role, std::string destination) {
-    remove_player_card(role, player_locations[role]);
-    remove_player_with_role(role);
-    place_player(role, destination);
+    player_deck.discard(remove_player_card(role, player_locations[role]));
+    move(role, destination);
   }
+  void Game::shuttle(player::Role role, std::string destination) {
+    if (!board[player_locations[role]].research_facility || !board[destination].research_facility) {
+      throw std::invalid_argument("You may only shuttle between research facilities.");
+    }
+    move(role, destination);
+  }
+
+  void Game::dispatcher_direct_flight(player::Role role, std::string destination) {
+    player_deck.discard(remove_player_card(player::dispatcher, destination));
+    move(role, destination);
+  }
+  void Game::dispatcher_charter_flight(player::Role role, std::string destination) {
+    player_deck.discard(remove_player_card(player::dispatcher, player_locations[role]));
+    move(role, destination);
+  }
+  void Game::dispatcher_conference(player::Role guest, player::Role host) {
+    move(guest, player_locations[host]);
+  }
+
+  void Game::treat(player::Role role, disease::DiseaseColor color) {
+    if (diseases[color].cured || role == player::medic) {
+      diseases[color].reserve += board[player_locations[role]].disease_count[color];
+      board[player_locations[role]].disease_count[color] = 0;
+    } else if (board[player_locations[role]].disease_count[color] > 0) {
+      diseases[color].reserve++;
+      board[player_locations[role]].disease_count[color]--;
+    }
+  }
+  void Game::share(player::Role source, player::Role target) {
+    if (player_locations[source] != player_locations[target]) {
+      throw std::invalid_argument("Players must be in the same city to share cards.");
+    }
+    add_card(target, remove_player_card(source, player_locations[source]));
+  }
+  void Game::researcher_share(std::string card_name, player::Role target) {
+    if (player_locations[player::researcher] != player_locations[target]) {
+      throw std::invalid_argument("Players must be in the same city to share cards.");
+    }
+    add_card(target, remove_player_card(player::researcher, card_name));
+  }
+
   bool Game::draw_player_card(player::Role role) {
     if (player_deck.size() == 0) {
       return true;

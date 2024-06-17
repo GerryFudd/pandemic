@@ -40,8 +40,8 @@ namespace gerryfudd::core {
     void update_protections(std::string);
     void remove_player_with_role(player::Role);
     void place_player(player::Role, std::string);
+    void move(player::Role, std::string);
     bool place_disease(std::string, disease::DiseaseColor, std::vector<std::string>&);
-    void remove_player_card(player::Role, std::string);
   public:
     Game();
     void setup(Difficulty, int);
@@ -56,12 +56,14 @@ namespace gerryfudd::core {
     int get_city_count(void);
     city::CityState get_state(std::string);
     std::vector<player::Player> get_players_in(std::string);
+    std::string get_location(player::Role);
     int get_research_facility_reserve(void);
     void place_research_facility(std::string);
     void place_research_facility(std::string, std::string);
     int get_player_count(void);
     player::Player get_player(player::Role);
     player::Player get_player(int);
+    card::Card remove_player_card(player::Role, std::string);
     city::City get_city(player::Role);
     bool draw_infection_card(void);
     int get_infection_rate(void);
@@ -70,6 +72,15 @@ namespace gerryfudd::core {
     void drive(player::Role, std::string);
     void direct_flight(player::Role, std::string);
     void charter_flight(player::Role, std::string);
+    void shuttle(player::Role, std::string);
+
+    void dispatcher_direct_flight(player::Role, std::string);
+    void dispatcher_charter_flight(player::Role, std::string);
+    void dispatcher_conference(player::Role, player::Role);
+
+    void treat(player::Role, disease::DiseaseColor);
+    void share(player::Role, player::Role);
+    void researcher_share(std::string, player::Role);
 
     bool draw_player_card(player::Role);
   };

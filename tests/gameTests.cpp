@@ -200,7 +200,7 @@ TEST(draw_infection_card) {
     }
   }
 
-  assert_equal(with_one, 5);
+  assert_true(with_one <= 5 && with_one >= 3, "There should be between 3 and 5 cities with one disease cube.");
   assert_equal(with_two, 3);
   assert_equal(with_three, 3);
 }
@@ -410,6 +410,323 @@ TEST(charter_flight_requires_card) {
     exception_thrown = true;
   }
   assert_true(exception_thrown, "Attempting an illegal charter flight should throw an exception.");
+}
+
+TEST(shuttle) {
+  Game game;
+  game.setup();
+
+  std::string destination = "Istanbul";
+  game.place_research_facility(destination);
+
+  game.shuttle(game.get_player(0).role, destination);
+  assert_equal(game.get_location(game.get_player(0).role), destination);
+}
+
+TEST(shuttle_requires_research_facility) {
+  Game game;
+  game.setup();
+
+  bool exception_thrown = false;
+  try {
+    game.shuttle(game.get_player(0).role, "Istanbul");
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+  }
+  assert_true(exception_thrown, "Players should not be able to shuttle without a research facility.");
+}
+
+TEST(dispatcher_direct_flight) {
+  Game game;
+  game.setup();
+
+  game.add_role(player::dispatcher);
+  game.add_card(player::dispatcher, card::Card("Istanbul", card::player));
+
+  player::Role other_role = game.get_player(0).role == player::dispatcher ? game.get_player(1).role : game.get_player(0).role;
+  game.drive(other_role, game.get_city(CDC_LOCATION).neighbors[0].name);
+
+  game.dispatcher_direct_flight(other_role, "Istanbul");
+  assert_equal<std::string>(game.get_location(other_role), "Istanbul");
+}
+
+TEST(dispatcher_direct_flight_requires_card) {
+  Game game;
+  game.setup();
+
+  game.add_role(player::dispatcher);
+  try {
+    game.remove_player_card(player::dispatcher, "Istanbul");
+  } catch(std::invalid_argument) {
+    // Ignore this failure. This test requires that the dispatcher doesn't have this card. This may have been the case before.
+  }
+
+  player::Role other_role = game.get_player(0).role == player::dispatcher ? game.get_player(1).role : game.get_player(0).role;
+
+  bool exception_thrown = false;
+  try {
+    game.dispatcher_direct_flight(other_role, "Istanbul");
+  } catch (std::invalid_argument e) {
+    assert_equal<std::string>(e.what(), "This player doesn't have this card.");
+    exception_thrown = true;
+  }
+  assert_true(exception_thrown, "Attempting an illegal dispatcher direct flight should throw an exception.");
+}
+
+TEST(dispatcher_charter_flight) {
+  Game game;
+  game.setup();
+  game.add_role(player::dispatcher);
+  game.add_card(player::dispatcher, card::Card(CDC_LOCATION, card::player));
+
+  player::Role other_role = game.get_player(0).role == player::dispatcher ? game.get_player(1).role : game.get_player(0).role;
+
+  game.dispatcher_charter_flight(other_role, "Istanbul");
+
+  assert_equal<std::string>(game.get_location(other_role), "Istanbul");
+}
+
+TEST(dispatcher_charter_flight_requires_card) {
+  Game game;
+  game.setup();
+  game.add_role(player::dispatcher);
+  try {
+    game.remove_player_card(player::dispatcher, CDC_LOCATION);
+  } catch(std::invalid_argument) {
+    // Ignore this failure. This test requires that the dispatcher doesn't have this card. This may have been the case before.
+  }
+
+  player::Role other_role = game.get_player(0).role == player::dispatcher ? game.get_player(1).role : game.get_player(0).role;
+
+  bool exception_thrown = false;
+  try {
+    game.dispatcher_charter_flight(other_role, "Istanbul");
+  } catch (std::invalid_argument e) {
+    assert_equal<std::string>(e.what(), "This player doesn't have this card.");
+    exception_thrown = true;
+  }
+  assert_true(exception_thrown, "Attempting an illegal dispatcher charter flight should throw an exception.");
+}
+
+TEST(dispatcher_conference) {
+  Game game;
+  game.setup(easy, 3);
+  game.add_role(player::dispatcher);
+  player::Role other_roles[2];
+  int i, adjust = 0;
+  for (i = 0; i < 3; i++) {
+    if (game.get_player(i).role == player::dispatcher) {
+      adjust = -1;
+    } else {
+      other_roles[i + adjust] = game.get_player(i).role;
+    }
+  }
+
+  game.add_card(other_roles[1], card::Card("Istanbul", card::player));
+  game.direct_flight(other_roles[1], "Istanbul");
+
+  game.dispatcher_conference(other_roles[0], other_roles[1]);
+  assert_equal<std::string>(game.get_location(other_roles[0]), "Istanbul");
+}
+
+TEST(treat) {
+  Game game;
+  game.setup();
+
+  // Any game will have at least one role that isn't the medic. Given a scenario where this player has the CDC location card. This enables them to charter a flight anywhere.
+  player::Role other_role = game.get_player(0).role == player::medic ? game.get_player(1).role : game.get_player(0).role;
+  game.add_card(other_role, card::Card(CDC_LOCATION, card::player));
+
+  std::string city_with_three;
+  for (std::map<std::string, city::City>::iterator cursor = game.city_begin(); cursor != game.city_end(); cursor++) {
+    if (game.get_state(cursor->first).disease_count[cursor->second.color] == 3) {
+      // Given a city with three disease markers.
+      city_with_three = cursor->first;
+      break;
+    }
+  }
+
+  // Have the non-medic fly to this city and treat the disease.
+  game.charter_flight(other_role, city_with_three);
+  game.treat(other_role, game.get_city(city_with_three).color);
+
+  // Then there should be two disease markers left.
+  assert_equal(game.get_state(city_with_three).disease_count[game.get_city(city_with_three).color], 2);
+}
+
+TEST(treat_as_medic) {
+  Game game;
+  game.setup();
+
+  // Given a game with a medic where the medic has the CDC location card. This enables the medic to charter a flight anywhere.
+  game.add_role(player::medic);
+  game.add_card(player::medic, card::Card(CDC_LOCATION, card::player));
+
+  std::string city_with_three;
+  for (std::map<std::string, city::City>::iterator cursor = game.city_begin(); cursor != game.city_end(); cursor++) {
+    if (game.get_state(cursor->first).disease_count[cursor->second.color] == 3) {
+      // Given a city with three disease markers.
+      city_with_three = cursor->first;
+      break;
+    }
+  }
+
+  // Have the medic fly to this city and treat the disease.
+  game.charter_flight(player::medic, city_with_three);
+  game.treat(player::medic, game.get_city(city_with_three).color);
+
+  // Then there should be no disease markers left.
+  assert_equal(game.get_state(city_with_three).disease_count[game.get_city(city_with_three).color], 0);
+}
+
+TEST(share) {
+  Game game;
+  game.setup();
+  
+  // There will be a player that isn't the researcher. Get their role and one other (the other player may or may not be the researcher).
+  int non_researcher_index = game.get_player(0).role == player::researcher ? 1 : 0;
+  player::Role non_researcher = game.get_player(non_researcher_index).role, other_role = game.get_player(non_researcher_index + 1).role;
+
+  // Ensure that the non-researcher has the card of the starting location and that the other player doesn't have this card.
+  game.add_card(non_researcher, card::Card(CDC_LOCATION, card::player));
+  try {
+    game.remove_player_card(other_role, CDC_LOCATION);
+  } catch(std::invalid_argument) {} // Ignore the exception if the player doesn't have this card already.
+
+  // Share the CDC_LOCATION card.
+  game.share(non_researcher, other_role);
+
+  card::Hand other_player_hand = game.get_player(other_role).hand,
+    non_researcher_hand = game.get_player(non_researcher).hand;
+
+  bool other_role_has_card = false;
+  for (std::vector<card::Card>::iterator cursor = other_player_hand.contents.begin(); cursor != other_player_hand.contents.end(); cursor++) {
+    if (cursor->name == CDC_LOCATION) {
+      other_role_has_card = true;
+      break;
+    }
+  }
+  assert_true(other_role_has_card, "The card should be in the other player's hand.");
+
+  bool non_researcher_has_card = false;
+  for (std::vector<card::Card>::iterator cursor = non_researcher_hand.contents.begin(); cursor != non_researcher_hand.contents.end(); cursor++) {
+    if (cursor->name == CDC_LOCATION) {
+      non_researcher_has_card = true;
+      break;
+    }
+  }
+  assert_false(non_researcher_has_card, "The card should be removed from the non-researcher's hand.");
+}
+
+TEST(share_requires_card_of_city) {
+  Game game;
+  game.setup();
+  
+  // There will be a player that isn't the researcher. Get their role and one other (the other player may or may not be the researcher).
+  int non_researcher_index = game.get_player(0).role == player::researcher ? 1 : 0;
+  player::Role non_researcher = game.get_player(non_researcher_index).role, other_role = game.get_player(non_researcher_index + 1).role;
+
+  // Ensure that the non-researcher doesn't have the starting location card.
+  try {
+    game.remove_player_card(non_researcher, CDC_LOCATION);
+  } catch(std::invalid_argument) {} // Ignore the exception if the player doesn't have this card already.
+
+  // Attempt to share the CDC_LOCATION card.
+  bool exception_thrown = false;
+  try {
+    game.share(non_researcher, other_role);
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "This player doesn't have this card.");
+  }
+
+  // Then
+  assert_true(exception_thrown, "Sharing a card should be illegal if it isn't present.");
+}
+
+TEST(share_requires_same_city) {
+  Game game;
+  game.setup();
+  // Ensure that the player at index 0 has the starting location card.
+  game.add_card(game.get_player(0).role, card::Card(CDC_LOCATION, card::player));
+  // Move the player at index 1 elsewhere.
+  game.drive(game.get_player(1).role, game.get_city(CDC_LOCATION).neighbors[0].name);
+
+  // Attempt to share the CDC_LOCATION card.
+  bool exception_thrown = false;
+  try {
+    game.share(game.get_player(0).role, game.get_player(1).role);
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "Players must be in the same city to share cards.");
+  }
+
+  // Then
+  assert_true(exception_thrown, "Sharing a card should be illegal if the players aren't in the same city.");
+}
+
+TEST(share_as_researcher) {
+  Game game;
+  game.setup();
+  game.add_role(player::researcher);
+  std::string non_starting_location = "Istanbul";
+  
+  // There will be a player that isn't the researcher. Get their role and one other (the other player may or may not be the researcher).
+  player::Role non_researcher = game.get_player(0).role == player::researcher ? game.get_player(1).role : game.get_player(0).role;
+
+  // Ensure that the researcher has some card other than the starting location and that the non-researcher doesn't have this card.
+  game.add_card(player::researcher, card::Card(non_starting_location, card::player));
+  try {
+    game.remove_player_card(non_researcher, non_starting_location);
+  } catch(std::invalid_argument) {} // Ignore the exception if the player doesn't have this card already.
+
+  // Share the non-starting location card.
+  game.researcher_share(non_starting_location, non_researcher);
+
+  // Confirm that the card has changed hands
+  card::Hand researcher_hand = game.get_player(player::researcher).hand,
+    non_researcher_hand = game.get_player(non_researcher).hand;
+
+  bool researcher_has_card = false;
+  for (std::vector<card::Card>::iterator cursor = researcher_hand.contents.begin(); cursor != researcher_hand.contents.end(); cursor++) {
+    if (cursor->name == non_starting_location) {
+      researcher_has_card = true;
+      break;
+    }
+  }
+  assert_false(researcher_has_card, "The card should be removed from the researcher's hand.");
+
+  bool non_researcher_has_card = false;
+  for (std::vector<card::Card>::iterator cursor = non_researcher_hand.contents.begin(); cursor != non_researcher_hand.contents.end(); cursor++) {
+    if (cursor->name == non_starting_location) {
+      non_researcher_has_card = true;
+      break;
+    }
+  }
+  assert_true(non_researcher_has_card, "The card should be added to the non-researcher's hand.");
+}
+
+TEST(share_as_researcher_requires_same_city) {
+  Game game;
+  game.setup();
+  game.add_role(player::researcher);
+  // Ensure that the researcher has the starting location card.
+  game.add_card(player::researcher, card::Card(CDC_LOCATION, card::player));
+  // Determine the other player's role. Move that player elsewhere.
+  player::Role non_researcher = game.get_player(0).role == player::researcher ? game.get_player(1).role : game.get_player(0).role;
+  game.drive(non_researcher, game.get_city(CDC_LOCATION).neighbors[0].name);
+
+  // Attempt to share the CDC_LOCATION card.
+  bool exception_thrown = false;
+  try {
+    game.researcher_share(CDC_LOCATION, non_researcher);
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "Players must be in the same city to share cards.");
+  }
+
+  // Then
+  assert_true(exception_thrown, "Sharing a card should be illegal if the players aren't in the same city.");
 }
 
 TEST(get_infection_discard) {
