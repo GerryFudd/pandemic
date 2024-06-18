@@ -1058,7 +1058,3 @@ TEST(get_infection_discard) {
 
   assert_equal<int>(game.get_infection_discard().size(), 9);
 }
-
-TEST(example) {
-  assert_equal(5, 3);
-}
