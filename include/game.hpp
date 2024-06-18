@@ -32,6 +32,7 @@ namespace gerryfudd::core {
     std::map<player::Role, std::string> player_locations;
     card::Deck infection_deck;
     card::Deck player_deck;
+    card::Hand contingency_card;
     int outbreaks;
     int infection_rate;
     int research_facility_reserve;
@@ -47,7 +48,9 @@ namespace gerryfudd::core {
     void setup(Difficulty, int);
     void setup();
     void add_role(player::Role); // For testing
+    void remove_role(player::Role); // For testing
     void add_card(player::Role, card::Card); // For testing
+    void discard(card::Card); // For testing
     int get_reserve(disease::DiseaseColor);
     bool is_cured(disease::DiseaseColor);
     city::City get_city(std::string);
@@ -68,6 +71,7 @@ namespace gerryfudd::core {
     bool draw_infection_card(void);
     int get_infection_rate(void);
     std::vector<card::Card> get_infection_discard(void);
+    std::vector<card::Card> get_player_discard(void);
     disease::DiseaseStatus get_status(disease::DiseaseColor);
 
     void drive(player::Role, std::string);
@@ -84,6 +88,9 @@ namespace gerryfudd::core {
     void researcher_share(std::string, player::Role);
     void cure(player::Role, std::string[5]);
     void scientist_cure(std::string[4]);
+
+    card::Hand get_contingency_card(void);
+    void reclaim(std::string);
 
     bool draw_player_card(player::Role);
   };

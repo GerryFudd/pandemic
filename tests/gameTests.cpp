@@ -738,6 +738,9 @@ TEST(cure_requires_five_cards_in_hand) {
   for (int i = 0; i < 4; i++) {
     game.add_card(game.get_player(0).role, card::Card(to_discard[i], card::player));
   }
+  try {
+    game.remove_player_card(game.get_player(0).role, to_discard[4]);
+  } catch(std::invalid_argument) {} // Ignore exception if card already missing.
   std::vector<card::Card> cards_in_hand = game.get_player(0).hand.contents;
   
   bool exception_thrown = false;
@@ -970,6 +973,83 @@ TEST(cure_as_scientist) {
     }
   }
   assert_true(game.get_status(disease::black).cured, "The disease should be cured.");
+}
+TEST(reclaim_requires_event_type) {
+  Game game;
+  game.setup();
+  game.add_role(player::contingency_planner);
+  game.discard(card::Card(CDC_LOCATION, card::player));
+  
+  bool exception_thrown = false;
+  try {
+    game.reclaim(CDC_LOCATION);
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "City cards may not be reclaimed.");
+  }
+  assert_true(exception_thrown, "City cards should not be re-claimable.");
+}
+TEST(reclaim_requires_card_in_discard) {
+  Game game;
+  game.setup();
+  game.add_role(player::contingency_planner);
+  
+  bool exception_thrown = false;
+  try {
+    game.reclaim(ONE_QUIET_NIGHT);
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "The card One Quiet Night is not in the discard pile.");
+  }
+  assert_true(exception_thrown, "Only discarded cards may be re-claimed.");
+}
+TEST(reclaim) {
+  Game game;
+  game.setup();
+  game.add_role(player::contingency_planner);
+  game.discard(card::Card(ONE_QUIET_NIGHT, card::player, card::one_quiet_night));
+
+  assert_false(card::contains(game.get_contingency_card(), ONE_QUIET_NIGHT), "The event card should not be on the contingency planner card initially.");
+  assert_equal<int>(game.get_player_discard().size(), 1);
+
+
+  game.reclaim(ONE_QUIET_NIGHT);
+  assert_true(card::contains(game.get_contingency_card(), ONE_QUIET_NIGHT), "The event card should be on the contingency planner card after reclaiming it.");
+  assert_equal<int>(game.get_player_discard().size(), 0);
+}
+TEST(reclaim_limited_to_one) {
+  Game game;
+  game.setup();
+  game.add_role(player::contingency_planner);
+  game.discard(card::Card(ONE_QUIET_NIGHT, card::player, card::one_quiet_night));
+  game.discard(card::Card(RESILIENT_POPULATION, card::player, card::resilient_population));
+
+  assert_equal<int>(game.get_player_discard().size(), 2);
+
+  game.reclaim(ONE_QUIET_NIGHT);
+  assert_true(card::contains(game.get_contingency_card(), ONE_QUIET_NIGHT), "The reclaimed event card should be on the contingency planner card after reclaiming it.");
+  assert_false(card::contains(game.get_contingency_card(), RESILIENT_POPULATION), "The other event card should not be on the contingency planner card.");
+
+  game.reclaim(RESILIENT_POPULATION);
+  assert_false(card::contains(game.get_contingency_card(), ONE_QUIET_NIGHT), "The old event card should be evicted from the contingency planner card after reclaiming it.");
+  assert_true(card::contains(game.get_contingency_card(), RESILIENT_POPULATION), "The newly reclaimed event card should be on the contingency planner card.");
+
+  assert_equal<int>(game.get_player_discard().size(), 0);
+}
+TEST(reclaim_requires_contingency_planner) {
+  Game game;
+  game.setup();
+  game.remove_role(player::contingency_planner);
+  game.discard(card::Card(ONE_QUIET_NIGHT, card::player, card::one_quiet_night));
+  
+  bool exception_thrown = false;
+  try {
+    game.reclaim(ONE_QUIET_NIGHT);
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "Reclaim is not usable without a contingency planner.");
+  }
+  assert_true(exception_thrown, "Reclaim should require a contingency planner.");
 }
 
 TEST(get_infection_discard) {

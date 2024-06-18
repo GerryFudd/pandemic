@@ -160,7 +160,6 @@ namespace gerryfudd::types::player {
   }
   std::vector<Role> get_roles(int player_count) {
     std::vector<Role> result;
-    player::Role first = player::contingency_planner;
     std::vector<Role> remaining;
     remaining.push_back(contingency_planner);
     remaining.push_back(dispatcher);
@@ -169,9 +168,6 @@ namespace gerryfudd::types::player {
     remaining.push_back(quarantine_specialist);
     remaining.push_back(scientist);
     remaining.push_back(researcher);
-    while (remaining.size() < 7) {
-      remaining.push_back(*(&first + remaining.size()));
-    }
     int i;
     while (result.size() < player_count) {
       i = card::random(remaining.size());

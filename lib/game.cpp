@@ -8,7 +8,7 @@
 namespace gerryfudd::core {
   int Game::infection_rate_escalation[] = INFECTION_RATE_ESCALATION;
   int Game::hand_sizes[] = HAND_SIZES;
-  Game::Game(): infection_deck{card::infect}, player_deck{card::player}, outbreaks{0}, infection_rate{0}, research_facility_reserve{RESEARCH_FACILITY_COUNT} {}
+  Game::Game(): infection_deck{card::infect}, player_deck{card::player}, contingency_card{card::player}, outbreaks{0}, infection_rate{0}, research_facility_reserve{RESEARCH_FACILITY_COUNT} {}
 
   int Game::place(std::string target, disease::DiseaseColor color, int quantity) {
     if (board[target].prevent_placement(color)) {
@@ -157,6 +157,34 @@ namespace gerryfudd::core {
     players.back().hand = hand;
     place_player(role, CDC_LOCATION);
   }
+  void Game::remove_role(player::Role role) {
+    std::vector<player::Role> unused_roles;
+    unused_roles.push_back(player::contingency_planner);
+    unused_roles.push_back(player::dispatcher);
+    unused_roles.push_back(player::medic); 
+    unused_roles.push_back(player::operations_expert); 
+    unused_roles.push_back(player::quarantine_specialist); 
+    unused_roles.push_back(player::scientist); 
+    unused_roles.push_back(player::researcher);
+    std::vector<player::Player>::iterator to_replace = players.end();
+    for (std::vector<player::Player>::iterator cursor = players.begin(); cursor != players.end(); cursor++) {
+      unused_roles.erase(std::find(unused_roles.begin(), unused_roles.end(), cursor->role));
+      if (cursor->role == role) {
+        to_replace = cursor;
+      }
+    }
+    if (to_replace == players.end()) {
+      // There is nothing to do.
+      return;
+    }
+    player::Role role_to_insert = unused_roles.back();
+    card::Hand hand = to_replace->hand;
+    remove_player_with_role(role);
+    players.erase(to_replace);
+    players.push_back(player::Player(role_to_insert));
+    players.back().hand = hand;
+    place_player(role_to_insert, CDC_LOCATION);
+  }
   void Game::add_card(player::Role role, card::Card card) {
     for (std::vector<player::Player>::iterator player_cursor = players.begin(); player_cursor != players.end(); player_cursor++) {
       if (player_cursor->role == role) {
@@ -166,6 +194,19 @@ namespace gerryfudd::core {
         player_cursor->hand.contents.push_back(card);
         return;
       }
+    }
+  }
+  void Game::discard(card::Card card) {
+    switch (card.deck_type)
+    {
+    case card::player:
+      player_deck.discard(card);
+      break;
+    case card::infect:
+      infection_deck.discard(card);
+      break;
+    default:
+      throw std::invalid_argument("");
     }
   }
 
@@ -303,6 +344,9 @@ namespace gerryfudd::core {
   std::vector<card::Card> Game::get_infection_discard() {
     return infection_deck.get_discard_contents();
   }
+  std::vector<card::Card> Game::get_player_discard() {
+    return player_deck.get_discard_contents();
+  }
 
   void Game::drive(player::Role role, std::string destination) {
     std::string origin = player_locations[role];
@@ -405,6 +449,21 @@ namespace gerryfudd::core {
       player_deck.discard(remove_player_card(player::scientist, matching_cards[i]));
     }
     diseases[disease_to_cure].cured = true;
+  }
+  card::Hand Game::get_contingency_card() {
+    return contingency_card;
+  }
+  void Game::reclaim(std::string event_card) {
+    if (player_locations[player::contingency_planner] == "") {
+      throw std::invalid_argument("Reclaim is not usable without a contingency planner.");
+    }
+    card::Card discarded_card = player_deck.remove_from_discard(event_card);
+    if (discarded_card.type == card::city) {
+      player_deck.discard(discarded_card);
+      throw std::invalid_argument("City cards may not be reclaimed.");
+    }
+    contingency_card.contents.resize(0, discarded_card);
+    contingency_card.contents.push_back(discarded_card);
   }
 
   bool Game::draw_player_card(player::Role role) {

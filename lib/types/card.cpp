@@ -118,6 +118,16 @@ namespace gerryfudd::types::card {
   std::vector<Card> Deck::get_discard_contents() {
     return discard_contents;
   }
+  Card Deck::remove_from_discard(std::string card_name) {
+    std::vector<Card>::iterator cursor;
+    for (cursor = discard_contents.begin(); cursor != discard_contents.end() && cursor->name != card_name; cursor++) {}
+    if (cursor == discard_contents.end()) {
+      throw std::invalid_argument("The card " + card_name + " is not in the discard pile.");
+    }
+    Card result = *cursor;
+    discard_contents.erase(cursor);
+    return result;
+  }
 
   void Deck::clear() {
     contents.clear();

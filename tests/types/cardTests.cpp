@@ -174,3 +174,28 @@ TEST(get_discard_contents) {
   discard_copy.pop_back();
   assert_equal(discard_copy.size(), deck.get_discard_contents().size() - 1);
 }
+
+TEST(remove_from_discard_throws_if_not_present) {
+  gerryfudd::types::card::Deck deck(gerryfudd::types::card::player);
+
+  bool exception_thrown = false;
+  try {
+    deck.remove_from_discard("foo");
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "The card foo is not in the discard pile.");
+  }
+  assert_true(exception_thrown, "This method should throw if the card isn't in the discard.");
+}
+
+TEST(remove_from_discard) {
+  gerryfudd::types::card::Deck deck(gerryfudd::types::card::player);
+
+  deck.discard(gerryfudd::types::card::Card("foo", gerryfudd::types::card::player));
+  assert_equal<int>(deck.get_discard_contents().size(), 1);
+
+  gerryfudd::types::card::Card removed_foo = deck.remove_from_discard("foo");
+
+  assert_equal<int>(deck.get_discard_contents().size(), 0);
+  assert_equal<std::string>(removed_foo.name, "foo");
+}
