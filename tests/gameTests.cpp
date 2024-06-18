@@ -1047,9 +1047,77 @@ TEST(reclaim_requires_contingency_planner) {
     game.reclaim(ONE_QUIET_NIGHT);
   } catch(std::invalid_argument e) {
     exception_thrown = true;
-    assert_equal<std::string>(e.what(), "Reclaim is not usable without a contingency planner.");
+    assert_equal<std::string>(e.what(), "Reclaim is not usable without a Contingency Planner.");
   }
-  assert_true(exception_thrown, "Reclaim should require a contingency planner.");
+  assert_true(exception_thrown, "Reclaim should require a Contingency Planner.");
+}
+
+TEST(company_plane_requires_operations_expert) {
+  Game game;
+  game.setup();
+  game.remove_role(player::operations_expert);
+  
+  bool exception_thrown = false;
+  try {
+    game.company_plane("Istanbul", "Madrid");
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "Company plane is not usable without an Operations Expert.");
+  }
+  assert_true(exception_thrown, "Company plane should require an Operations Expert.");
+}
+
+TEST(company_plane_requires_discarded_card) {
+  Game game;
+  game.setup();
+  game.add_role(player::operations_expert);
+  std::string to_discard = "Madrid";
+  try {
+  game.remove_player_card(player::operations_expert, to_discard);
+  } catch(std::invalid_argument) {} // Ignore exception if card is missing.
+  
+  bool exception_thrown = false;
+  try {
+    game.company_plane("Istanbul", to_discard);
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "This player does not have this card.");
+  }
+  assert_true(exception_thrown, "Company plane should require the discarded card.");
+}
+
+TEST(company_plane_requires_research_facility) {
+  Game game;
+  game.setup();
+  game.add_role(player::operations_expert);
+  std::string to_discard = "Madrid";
+  game.add_card(player::operations_expert, card::Card(to_discard, card::player));
+
+  game.drive(player::operations_expert, game.get_city(CDC_LOCATION).neighbors[0].name);
+  
+  bool exception_thrown = false;
+  try {
+    game.company_plane("Istanbul", to_discard);
+  } catch(std::invalid_argument e) {
+    exception_thrown = true;
+    assert_equal<std::string>(e.what(), "Company plane requires the Operations Expert to be in a city with a research facility.");
+  }
+  assert_true(exception_thrown, "Company plane should require a research facility.");
+}
+
+TEST(company_plane) {
+  Game game;
+  game.setup();
+  game.add_role(player::operations_expert);
+  std::string destination = "Istanbul", to_discard = "Madrid";
+  game.add_card(player::operations_expert, card::Card(to_discard, card::player));
+  
+  // Take the company plane
+  game.company_plane(destination, to_discard);
+
+  assert_false(card::contains(game.get_player(player::operations_expert).hand, to_discard), "The discarded card should be removed from the Operations Expert's hand.");
+  assert_equal(game.get_player_discard().back().name, to_discard);
+  assert_equal(game.get_location(player::operations_expert), destination);
 }
 
 TEST(get_infection_discard) {

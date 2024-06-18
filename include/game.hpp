@@ -92,6 +92,8 @@ namespace gerryfudd::core {
     card::Hand get_contingency_card(void);
     void reclaim(std::string);
 
+    void company_plane(std::string, std::string);
+
     bool draw_player_card(player::Role);
   };
 }

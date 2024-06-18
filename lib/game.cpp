@@ -455,7 +455,7 @@ namespace gerryfudd::core {
   }
   void Game::reclaim(std::string event_card) {
     if (player_locations[player::contingency_planner] == "") {
-      throw std::invalid_argument("Reclaim is not usable without a contingency planner.");
+      throw std::invalid_argument("Reclaim is not usable without a Contingency Planner.");
     }
     card::Card discarded_card = player_deck.remove_from_discard(event_card);
     if (discarded_card.type == card::city) {
@@ -464,6 +464,18 @@ namespace gerryfudd::core {
     }
     contingency_card.contents.resize(0, discarded_card);
     contingency_card.contents.push_back(discarded_card);
+  }
+  void Game::company_plane(std::string destination, std::string to_discard) {
+    if (player_locations[player::operations_expert] == "") {
+      throw std::invalid_argument("Company plane is not usable without an Operations Expert.");
+    } else if (!get_state(player_locations[player::operations_expert]).research_facility) {
+      throw std::invalid_argument("Company plane requires the Operations Expert to be in a city with a research facility.");
+    }
+    if (!card::contains(get_player(player::operations_expert).hand, to_discard)) {
+      throw std::invalid_argument("This player does not have this card.");
+    }
+    player_deck.discard(remove_player_card(player::operations_expert, to_discard));
+    move(player::operations_expert, destination);
   }
 
   bool Game::draw_player_card(player::Role role) {
