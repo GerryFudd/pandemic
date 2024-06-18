@@ -1,3 +1,0 @@
-./compile.sh
-
-./out/pandemic
