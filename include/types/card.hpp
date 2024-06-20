@@ -46,6 +46,7 @@ namespace gerryfudd::types::card {
     void clear(void);
     std::vector<Card> get_discard_contents(void);
     Card remove_from_discard(std::string);
+    Card draw_and_discard(void);
   };
 }
 

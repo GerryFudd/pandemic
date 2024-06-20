@@ -128,6 +128,11 @@ namespace gerryfudd::types::card {
     discard_contents.erase(cursor);
     return result;
   }
+  Card Deck::draw_and_discard() {
+    Card result = draw();
+    discard_contents.push_back(result);
+    return result;
+  }
 
   void Deck::clear() {
     contents.clear();

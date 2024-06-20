@@ -22,9 +22,7 @@ using namespace gerryfudd::types;
 
 namespace gerryfudd::core {
   enum Difficulty { easy, medium, hard };
-  class Game {
-    static int infection_rate_escalation[INFECTION_RATE_SIZE];
-    static int hand_sizes[PLAYER_COUNT_OPTIONS];
+  struct GameState {
     std::map<disease::DiseaseColor, disease::DiseaseStatus> diseases;
     std::map<std::string, city::City> cities;
     std::map<std::string, city::CityState> board;
@@ -36,6 +34,10 @@ namespace gerryfudd::core {
     int outbreaks;
     int infection_rate;
     int research_facility_reserve;
+    GameState();
+  };
+  class Game {
+    GameState state;
     int place(std::string, disease::DiseaseColor, int);
     int place(std::string, int);
     void update_protections(std::string);
@@ -44,6 +46,8 @@ namespace gerryfudd::core {
     void move(player::Role, std::string);
     bool place_disease(std::string, disease::DiseaseColor, std::vector<std::string>&);
   public:
+    static int infection_rate_escalation[INFECTION_RATE_SIZE];
+    static int hand_sizes[PLAYER_COUNT_OPTIONS];
     Game();
     void setup(Difficulty, int);
     void setup();
@@ -51,11 +55,7 @@ namespace gerryfudd::core {
     void remove_role(player::Role); // For testing
     void add_card(player::Role, card::Card); // For testing
     void discard(card::Card); // For testing
-    int get_reserve(disease::DiseaseColor);
-    bool is_cured(disease::DiseaseColor);
-    city::City get_city(std::string);
-    std::map<std::string, city::City>::iterator city_begin();
-    std::map<std::string, city::City>::iterator city_end();
+    GameState get_state(void);
     int get_city_count(void);
     city::CityState get_state(std::string);
     std::vector<player::Player> get_players_in(std::string);
