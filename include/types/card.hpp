@@ -40,12 +40,14 @@ namespace gerryfudd::types::card {
     void shuffle(int, int);
     void insert(Card, int);
     Card draw(void);
+    Card draw(int);
     Card reveal(int);
     int size(void);
     int remaining(void);
     void clear(void);
     std::vector<Card> get_discard_contents(void);
     Card remove_from_discard(std::string);
+    Card draw_and_discard(int);
     Card draw_and_discard(void);
   };
 }

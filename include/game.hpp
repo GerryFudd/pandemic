@@ -32,9 +32,10 @@ namespace gerryfudd::core {
     card::Deck player_deck;
     card::Hand contingency_card;
     int outbreaks;
-    int infection_rate;
+    int infection_rate_level;
     int research_facility_reserve;
     GameState();
+    int get_infection_rate(void);
   };
   class Game {
     GameState state;
@@ -81,6 +82,8 @@ namespace gerryfudd::core {
     void reclaim(std::string);
 
     void company_plane(std::string, std::string);
+
+    bool epidemic(void);
 
     bool draw_player_card(player::Role);
   };

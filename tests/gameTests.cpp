@@ -1,6 +1,7 @@
 #include <Framework.hpp>
 #include <Assertions.inl>
 #include <game.hpp>
+#include <set>
 
 using namespace gerryfudd::test;
 using namespace gerryfudd::core;
@@ -161,7 +162,8 @@ TEST(setup_get_player_by_role) {
 TEST(get_initial_infection_rate) {
   Game game;
   game.setup();
-  assert_equal(game.get_state().infection_rate, 2);
+  assert_equal(game.get_state().infection_rate_level, 0);
+  assert_equal(game.get_state().get_infection_rate(), 2);
 }
 
 TEST(draw_infection_card) {
@@ -1145,9 +1147,45 @@ TEST(company_plane) {
   assert_equal(game.get_state().player_locations[player::operations_expert], destination);
 }
 
-TEST(get_infection_discard) {
+TEST(epidemic) {
   Game game;
   game.setup();
+  game.remove_role(player::quarantine_specialist); // This role may prevent disease placement. Remove it for testing.
 
-  assert_equal<int>(game.get_state().infection_deck.get_discard_contents().size(), 9);
+  GameState game_state_before = game.get_state();
+
+  card::Card bottom_card = game_state_before.infection_deck.reveal(-1);
+  std::vector<card::Card> infection_discard_before = game_state_before.infection_deck.get_discard_contents();
+  disease::DiseaseColor color = game_state_before.cities[bottom_card.name].color;
+
+  assert_equal(game_state_before.board[bottom_card.name].disease_count[color], 0);
+  assert_equal(game_state_before.infection_rate_level, 0);
+
+
+  assert_equal<int>(infection_discard_before.size(), 9);
+  assert_equal<int>(game_state_before.infection_deck.remaining(), game_state_before.cities.size() - 9);
+
+  assert_false(game.epidemic(), "The first epidemic of the game shouldn't result in a loss.");
+
+  GameState game_state_after = game.get_state();
+  assert_equal(game_state_after.board[bottom_card.name].disease_count[color], 3);
+  assert_equal(game_state_after.diseases[color].reserve, game_state_before.diseases[color].reserve - 3);
+  assert_equal(game_state_after.infection_rate_level, 1);
+
+  assert_equal<int>(game_state_after.infection_deck.get_discard_contents().size(), 0);
+
+  struct CardCompare {
+    bool operator() (const card::Card& lhs, const card::Card& rhs) const {
+      return lhs.name < rhs.name;
+    }
+  };
+  std::set<card::Card, CardCompare> expected_top_ten(infection_discard_before.begin(), infection_discard_before.end());
+  expected_top_ten.insert(bottom_card);
+  assert_equal<int>(game_state_after.infection_deck.remaining(), game_state_after.cities.size());
+  std::set<card::Card>::iterator cursor;
+  for (int i = 0; i < 10; i++) {
+    cursor = expected_top_ten.find(game_state_after.infection_deck.reveal(i));
+    assert_false(cursor == expected_top_ten.end(), "All of the top ten infection cards should come from the discard.");
+    expected_top_ten.erase(cursor);
+  }
 }

@@ -101,12 +101,21 @@ namespace gerryfudd::types::card {
   }
 
   Card Deck::draw() {
-    Card result = contents.back();
-    contents.pop_back();
+    return draw(0);
+  }
+  Card Deck::draw(int i) {
+    std::vector<card::Card>::iterator cursor = contents.begin();
+    int place = 0;
+    while ((contents.size() - i - 1) % contents.size() > place) {
+      cursor++;
+      place++;
+    }
+    Card result = *cursor;
+    contents.erase(cursor);
     return result;
   }
   Card Deck::reveal(int position) {
-    return contents[contents.size() - position - 1];
+    return contents[(contents.size() - position - 1) % contents.size()];
   }
   int Deck::size() {
     return contents.size() + discard_contents.size();
@@ -129,7 +138,10 @@ namespace gerryfudd::types::card {
     return result;
   }
   Card Deck::draw_and_discard() {
-    Card result = draw();
+    return draw_and_discard(0);
+  }
+  Card Deck::draw_and_discard(int i) {
+    Card result = draw(i);
     discard_contents.push_back(result);
     return result;
   }

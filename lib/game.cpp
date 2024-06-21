@@ -8,7 +8,10 @@
 namespace gerryfudd::core {
   int Game::infection_rate_escalation[] = INFECTION_RATE_ESCALATION;
   int Game::hand_sizes[] = HAND_SIZES;
-  GameState::GameState(): infection_deck{card::infect}, player_deck{card::player}, contingency_card{card::player}, outbreaks{0}, infection_rate{Game::infection_rate_escalation[0]}, research_facility_reserve{RESEARCH_FACILITY_COUNT} {}
+  GameState::GameState(): infection_deck{card::infect}, player_deck{card::player}, contingency_card{card::player}, outbreaks{0}, infection_rate_level{0}, research_facility_reserve{RESEARCH_FACILITY_COUNT} {}
+  int GameState::get_infection_rate() {
+    return Game::infection_rate_escalation[infection_rate_level];
+  }
   Game::Game() {}
 
   int Game::place(std::string target, disease::DiseaseColor color, int quantity) {
@@ -396,6 +399,14 @@ namespace gerryfudd::core {
     }
     state.player_deck.discard(remove_player_card(player::operations_expert, to_discard));
     move(player::operations_expert, destination);
+  }
+
+  bool Game::epidemic() {
+    card::Card infection_card = state.infection_deck.draw_and_discard(-1);
+    state.infection_deck.shuffle();
+    place(infection_card.name, 3);
+    state.infection_rate_level++;
+    return false;
   }
 
   bool Game::draw_player_card(player::Role role) {
