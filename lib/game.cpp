@@ -197,31 +197,6 @@ namespace gerryfudd::core {
     }
   }
 
-  int Game::get_city_count() {
-    return state.cities.size();
-  }
-
-  city::CityState Game::get_state(std::string city_name) {
-    return state.board[city_name];
-  }
-
-  std::vector<player::Player> Game::get_players_in(std::string city_name) {
-    std::vector<player::Player> result;
-    for (std::vector<player::Player>::iterator cursor = state.players.begin(); cursor != state.players.end(); cursor++) {
-      if (state.player_locations[cursor->role] == city_name) {
-        result.push_back(*cursor);
-      }
-    }
-    return result;
-  }
-  std::string Game::get_location(player::Role role) {
-    return state.player_locations[role];
-  }
-
-  int Game::get_research_facility_reserve() {
-    return state.research_facility_reserve;
-  }
-
   void Game::place_research_facility(std::string city_name) {
     state.board[city_name].research_facility = true;
     state.research_facility_reserve--;
@@ -242,19 +217,6 @@ namespace gerryfudd::core {
       }
     }
     throw std::invalid_argument("There is no player with this role");
-  }
-  player::Player Game::get_player(int n) {
-    return state.players[n % state.players.size()];
-  }
-  city::City Game::get_city(player::Role role) {
-    return state.cities[state.player_locations[role]];
-  }
-
-  int Game::get_infection_rate() {
-    return infection_rate_escalation[state.infection_rate];
-  }
-  disease::DiseaseStatus Game::get_status(disease::DiseaseColor color) {
-    return state.diseases[color];
   }
   bool Game::place_disease(std::string city_name, disease::DiseaseColor color, std::vector<std::string>& executed_outbreaks) {
     if (state.board[city_name].prevent_placement(color)) {
@@ -307,12 +269,6 @@ namespace gerryfudd::core {
       }
     }
     throw std::invalid_argument("This player doesn't have this card.");
-  }
-  std::vector<card::Card> Game::get_infection_discard() {
-    return state.infection_deck.get_discard_contents();
-  }
-  std::vector<card::Card> Game::get_player_discard() {
-    return state.player_deck.get_discard_contents();
   }
 
   void Game::drive(player::Role role, std::string destination) {
@@ -417,9 +373,6 @@ namespace gerryfudd::core {
     }
     state.diseases[disease_to_cure].cured = true;
   }
-  card::Hand Game::get_contingency_card() {
-    return state.contingency_card;
-  }
   void Game::reclaim(std::string event_card) {
     if (state.player_locations[player::contingency_planner] == "") {
       throw std::invalid_argument("Reclaim is not usable without a Contingency Planner.");
@@ -435,7 +388,7 @@ namespace gerryfudd::core {
   void Game::company_plane(std::string destination, std::string to_discard) {
     if (state.player_locations[player::operations_expert] == "") {
       throw std::invalid_argument("Company plane is not usable without an Operations Expert.");
-    } else if (!get_state(state.player_locations[player::operations_expert]).research_facility) {
+    } else if (!state.board[state.player_locations[player::operations_expert]].research_facility) {
       throw std::invalid_argument("Company plane requires the Operations Expert to be in a city with a research facility.");
     }
     if (!card::contains(get_player(player::operations_expert).hand, to_discard)) {

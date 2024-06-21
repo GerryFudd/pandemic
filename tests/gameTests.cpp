@@ -330,15 +330,16 @@ TEST(direct_flight_quarantine_specialist) {
 TEST(direct_flight_requires_card) {
   Game game;
   game.setup();
+  GameState game_state = game.get_state();
 
   std::string destination = "";
   int player_index = 0, hand_index = 0;
   while (destination == "") {
-    if (game.get_player(player_index).hand.contents[hand_index].type == card::city) {
-      destination = game.get_player(player_index).hand.contents[hand_index].name;
-    } else if (hand_index < game.get_player(player_index).hand.contents.size() - 1) {
+    if (game_state.players[player_index].hand.contents[hand_index].type == card::city) {
+      destination = game_state.players[player_index].hand.contents[hand_index].name;
+    } else if (hand_index < game_state.players[player_index].hand.contents.size() - 1) {
       hand_index++;
-    } else if (player_index < game.get_player_count() - 1) {
+    } else if (player_index < game_state.players.size() - 1) {
       hand_index = 0;
       player_index++;
     } else {
@@ -348,7 +349,7 @@ TEST(direct_flight_requires_card) {
 
   bool exception_thrown = false;
   try {
-    game.direct_flight(game.get_player(player_index + 1).role, destination);
+    game.direct_flight(game_state.players[(player_index + 1) % game_state.players.size()].role, destination);
   } catch (std::invalid_argument e) {
     assert_equal<std::string>(e.what(), "This player doesn't have this card.");
     exception_thrown = true;
@@ -396,8 +397,9 @@ TEST(charter_flight_quarantine_specialist) {
 TEST(charter_flight_requires_card) {
   Game game;
   game.setup();
+  GameState game_state = game.get_state();
 
-  card::Hand first_player_hand = game.get_player(0).hand;
+  card::Hand first_player_hand = game_state.players[0].hand;
 
   // This is the index of a player that doesn't have the starting location in their hand.
   int player_index = 0;
@@ -410,7 +412,7 @@ TEST(charter_flight_requires_card) {
 
   bool exception_thrown = false;
   try {
-    game.charter_flight(game.get_player(player_index).role, "Istanbul");
+    game.charter_flight(game_state.players[player_index].role, "Istanbul");
   } catch (std::invalid_argument e) {
     assert_equal<std::string>(e.what(), "This player doesn't have this card.");
     exception_thrown = true;
@@ -425,17 +427,20 @@ TEST(shuttle) {
   std::string destination = "Istanbul";
   game.place_research_facility(destination);
 
-  game.shuttle(game.get_player(0).role, destination);
-  assert_equal(game.get_location(game.get_player(0).role), destination);
+  game.shuttle(game.get_state().players[0].role, destination);
+
+  GameState game_state = game.get_state();
+  assert_equal(game_state.player_locations[game_state.players[0].role], destination);
 }
 
 TEST(shuttle_requires_research_facility) {
   Game game;
   game.setup();
+  GameState game_state = game.get_state();
 
   bool exception_thrown = false;
   try {
-    game.shuttle(game.get_player(0).role, "Istanbul");
+    game.shuttle(game_state.players[0].role, "Istanbul");
   } catch(std::invalid_argument e) {
     exception_thrown = true;
   }
@@ -448,12 +453,14 @@ TEST(dispatcher_direct_flight) {
 
   game.add_role(player::dispatcher);
   game.add_card(player::dispatcher, card::Card("Istanbul", card::player));
+  GameState game_state = game.get_state();
 
-  player::Role other_role = game.get_player(0).role == player::dispatcher ? game.get_player(1).role : game.get_player(0).role;
+  player::Role other_role = game_state.players[0].role == player::dispatcher ? game_state.players[1].role : game_state.players[0].role;
   game.drive(other_role, game.get_state().cities[CDC_LOCATION].neighbors[0].name);
 
   game.dispatcher_direct_flight(other_role, "Istanbul");
-  assert_equal<std::string>(game.get_location(other_role), "Istanbul");
+
+  assert_equal<std::string>(game.get_state().player_locations[other_role], "Istanbul");
 }
 
 TEST(dispatcher_direct_flight_requires_card) {
@@ -466,8 +473,9 @@ TEST(dispatcher_direct_flight_requires_card) {
   } catch(std::invalid_argument) {
     // Ignore this failure. This test requires that the dispatcher doesn't have this card. This may have been the case before.
   }
+  GameState game_state = game.get_state();
 
-  player::Role other_role = game.get_player(0).role == player::dispatcher ? game.get_player(1).role : game.get_player(0).role;
+  player::Role other_role = game_state.players[0].role == player::dispatcher ? game_state.players[1].role : game_state.players[0].role;
 
   bool exception_thrown = false;
   try {
@@ -484,12 +492,13 @@ TEST(dispatcher_charter_flight) {
   game.setup();
   game.add_role(player::dispatcher);
   game.add_card(player::dispatcher, card::Card(CDC_LOCATION, card::player));
+  GameState game_state = game.get_state();
 
-  player::Role other_role = game.get_player(0).role == player::dispatcher ? game.get_player(1).role : game.get_player(0).role;
+  player::Role other_role = game_state.players[0].role == player::dispatcher ? game_state.players[1].role : game_state.players[0].role;
 
   game.dispatcher_charter_flight(other_role, "Istanbul");
 
-  assert_equal<std::string>(game.get_location(other_role), "Istanbul");
+  assert_equal<std::string>(game.get_state().player_locations[other_role], "Istanbul");
 }
 
 TEST(dispatcher_charter_flight_requires_card) {
@@ -501,8 +510,9 @@ TEST(dispatcher_charter_flight_requires_card) {
   } catch(std::invalid_argument) {
     // Ignore this failure. This test requires that the dispatcher doesn't have this card. This may have been the case before.
   }
+  GameState game_state = game.get_state();
 
-  player::Role other_role = game.get_player(0).role == player::dispatcher ? game.get_player(1).role : game.get_player(0).role;
+  player::Role other_role = game_state.players[0].role == player::dispatcher ? game_state.players[1].role : game_state.players[0].role;
 
   bool exception_thrown = false;
   try {
@@ -518,13 +528,14 @@ TEST(dispatcher_conference) {
   Game game;
   game.setup(easy, 3);
   game.add_role(player::dispatcher);
+  GameState game_state = game.get_state();
   player::Role other_roles[2];
   int i, adjust = 0;
   for (i = 0; i < 3; i++) {
-    if (game.get_player(i).role == player::dispatcher) {
+    if (game_state.players[i].role == player::dispatcher) {
       adjust = -1;
     } else {
-      other_roles[i + adjust] = game.get_player(i).role;
+      other_roles[i + adjust] = game_state.players[i].role;
     }
   }
 
@@ -532,18 +543,19 @@ TEST(dispatcher_conference) {
   game.direct_flight(other_roles[1], "Istanbul");
 
   game.dispatcher_conference(other_roles[0], other_roles[1]);
-  assert_equal<std::string>(game.get_location(other_roles[0]), "Istanbul");
+  assert_equal<std::string>(game.get_state().player_locations[other_roles[0]], "Istanbul");
 }
 
 TEST(treat) {
   Game game;
   game.setup();
+  GameState game_state = game.get_state();
 
   // Any game will have at least one role that isn't the medic. Given a scenario where this player has the CDC location card. This enables them to charter a flight anywhere.
-  player::Role other_role = game.get_player(0).role == player::medic ? game.get_player(1).role : game.get_player(0).role;
+  player::Role other_role = game_state.players[0].role == player::medic ? game_state.players[1].role : game_state.players[0].role;
   game.add_card(other_role, card::Card(CDC_LOCATION, card::player));
 
-  GameState game_state = game.get_state();
+  game_state = game.get_state();
   std::string city_with_three;
   for (std::map<std::string, city::City>::iterator cursor = game_state.cities.begin(); cursor != game_state.cities.end(); cursor++) {
     if (game.get_state().board[cursor->first].disease_count[cursor->second.color] == 3) {
@@ -590,10 +602,11 @@ TEST(treat_as_medic) {
 TEST(share) {
   Game game;
   game.setup();
+  GameState game_state = game.get_state();
   
   // There will be a player that isn't the researcher. Get their role and one other (the other player may or may not be the researcher).
-  int non_researcher_index = game.get_player(0).role == player::researcher ? 1 : 0;
-  player::Role non_researcher = game.get_player(non_researcher_index).role, other_role = game.get_player(non_researcher_index + 1).role;
+  int non_researcher_index = game_state.players[0].role == player::researcher;
+  player::Role non_researcher = game_state.players[non_researcher_index].role, other_role = game_state.players[!non_researcher_index].role;
 
   // Ensure that the non-researcher has the card of the starting location and that the other player doesn't have this card.
   game.add_card(non_researcher, card::Card(CDC_LOCATION, card::player));
@@ -629,10 +642,11 @@ TEST(share) {
 TEST(share_requires_card_of_city) {
   Game game;
   game.setup();
+  GameState game_state = game.get_state();
   
   // There will be a player that isn't the researcher. Get their role and one other (the other player may or may not be the researcher).
-  int non_researcher_index = game.get_player(0).role == player::researcher ? 1 : 0;
-  player::Role non_researcher = game.get_player(non_researcher_index).role, other_role = game.get_player(non_researcher_index + 1).role;
+  int non_researcher_index = game_state.players[0].role == player::researcher;
+  player::Role non_researcher = game_state.players[non_researcher_index].role, other_role = game_state.players[!non_researcher_index].role;
 
   // Ensure that the non-researcher doesn't have the starting location card.
   try {
@@ -656,14 +670,14 @@ TEST(share_requires_same_city) {
   Game game;
   game.setup();
   // Ensure that the player at index 0 has the starting location card.
-  game.add_card(game.get_player(0).role, card::Card(CDC_LOCATION, card::player));
+  game.add_card(game.get_state().players[0].role, card::Card(CDC_LOCATION, card::player));
   // Move the player at index 1 elsewhere.
-  game.drive(game.get_player(1).role, game.get_state().cities[CDC_LOCATION].neighbors[0].name);
+  game.drive(game.get_state().players[1].role, game.get_state().cities[CDC_LOCATION].neighbors[0].name);
 
   // Attempt to share the CDC_LOCATION card.
   bool exception_thrown = false;
   try {
-    game.share(game.get_player(0).role, game.get_player(1).role);
+    game.share(game.get_state().players[0].role, game.get_state().players[1].role);
   } catch(std::invalid_argument e) {
     exception_thrown = true;
     assert_equal<std::string>(e.what(), "Players must be in the same city to share cards.");
@@ -680,7 +694,7 @@ TEST(share_as_researcher) {
   std::string non_starting_location = "Istanbul";
   
   // There will be a player that isn't the researcher. Get their role and one other (the other player may or may not be the researcher).
-  player::Role non_researcher = game.get_player(0).role == player::researcher ? game.get_player(1).role : game.get_player(0).role;
+  player::Role non_researcher = game.get_state().players[0].role == player::researcher ? game.get_state().players[1].role : game.get_state().players[0].role;
 
   // Ensure that the researcher has some card other than the starting location and that the non-researcher doesn't have this card.
   game.add_card(player::researcher, card::Card(non_starting_location, card::player));
@@ -721,7 +735,7 @@ TEST(share_as_researcher_requires_same_city) {
   // Ensure that the researcher has the starting location card.
   game.add_card(player::researcher, card::Card(CDC_LOCATION, card::player));
   // Determine the other player's role. Move that player elsewhere.
-  player::Role non_researcher = game.get_player(0).role == player::researcher ? game.get_player(1).role : game.get_player(0).role;
+  player::Role non_researcher = game.get_state().players[0].role == player::researcher ? game.get_state().players[1].role : game.get_state().players[0].role;
   game.drive(non_researcher, game.get_state().cities[CDC_LOCATION].neighbors[0].name);
 
   // Attempt to share the CDC_LOCATION card.
@@ -744,16 +758,16 @@ TEST(cure_requires_five_cards_in_hand) {
   // Suppose that player 0 has four of these cards.
   std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai", "Delhi"};
   for (int i = 0; i < 4; i++) {
-    game.add_card(game.get_player(0).role, card::Card(to_discard[i], card::player));
+    game.add_card(game.get_state().players[0].role, card::Card(to_discard[i], card::player));
   }
   try {
-    game.remove_player_card(game.get_player(0).role, to_discard[4]);
+    game.remove_player_card(game.get_state().players[0].role, to_discard[4]);
   } catch(std::invalid_argument) {} // Ignore exception if card already missing.
-  std::vector<card::Card> cards_in_hand = game.get_player(0).hand.contents;
+  std::vector<card::Card> cards_in_hand = game.get_state().players[0].hand.contents;
   
   bool exception_thrown = false;
   try {
-    game.cure(game.get_player(0).role, to_discard);
+    game.cure(game.get_state().players[0].role, to_discard);
   } catch(std::invalid_argument e) {
     exception_thrown = true;
     assert_equal<std::string>(e.what(), "This player doesn't have this card.");
@@ -761,9 +775,9 @@ TEST(cure_requires_five_cards_in_hand) {
 
   assert_true(exception_thrown, "Attempting to cure with cards that aren't in your hand should be illegal.");
   // The player's hand shouldn't be different after a failure.
-  assert_equal<int>(game.get_player(0).hand.contents.size(), cards_in_hand.size());
+  assert_equal<int>(game.get_state().players[0].hand.contents.size(), cards_in_hand.size());
   for (int i = 0; i < cards_in_hand.size(); i++) {
-    assert_equal<std::string>(game.get_player(0).hand.contents[i].name, cards_in_hand[i].name);
+    assert_equal<std::string>(game.get_state().players[0].hand.contents[i].name, cards_in_hand[i].name);
   }
 }
 
@@ -774,13 +788,13 @@ TEST(cure_requires_five_cards_of_the_same_color) {
   // Suppose that player 0 has all of these cards.
   std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai", "Atlanta"};
   for (int i = 0; i < 5; i++) {
-    game.add_card(game.get_player(0).role, card::Card(to_discard[i], card::player));
+    game.add_card(game.get_state().players[0].role, card::Card(to_discard[i], card::player));
   }
-  std::vector<card::Card> cards_in_hand = game.get_player(0).hand.contents;
+  std::vector<card::Card> cards_in_hand = game.get_state().players[0].hand.contents;
   
   bool exception_thrown = false;
   try {
-    game.cure(game.get_player(0).role, to_discard);
+    game.cure(game.get_state().players[0].role, to_discard);
   } catch(std::invalid_argument e) {
     exception_thrown = true;
     assert_equal<std::string>(e.what(), "Curing a disease requires that all discarded cards share a color.");
@@ -788,9 +802,9 @@ TEST(cure_requires_five_cards_of_the_same_color) {
 
   assert_true(exception_thrown, "Attempting to cure with cards that aren't the same color should be illegal.");
   // The player's hand shouldn't be different after a failure.
-  assert_equal<int>(game.get_player(0).hand.contents.size(), cards_in_hand.size());
+  assert_equal<int>(game.get_state().players[0].hand.contents.size(), cards_in_hand.size());
   for (int i = 0; i < cards_in_hand.size(); i++) {
-    assert_equal<std::string>(game.get_player(0).hand.contents[i].name, cards_in_hand[i].name);
+    assert_equal<std::string>(game.get_state().players[0].hand.contents[i].name, cards_in_hand[i].name);
   }
 }
 
@@ -798,18 +812,18 @@ TEST(cure_requires_research_facility) {
   Game game;
   game.setup();
   // Move player 0 away from the starting location.
-  game.drive(game.get_player(0).role, game.get_state().cities[CDC_LOCATION].neighbors[0].name);
+  game.drive(game.get_state().players[0].role, game.get_state().cities[CDC_LOCATION].neighbors[0].name);
   
   // Suppose that player 0 has all of these cards.
   std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai", "Delhi"};
   for (int i = 0; i < 5; i++) {
-    game.add_card(game.get_player(0).role, card::Card(to_discard[i], card::player));
+    game.add_card(game.get_state().players[0].role, card::Card(to_discard[i], card::player));
   }
-  std::vector<card::Card> cards_in_hand = game.get_player(0).hand.contents;
+  std::vector<card::Card> cards_in_hand = game.get_state().players[0].hand.contents;
   
   bool exception_thrown = false;
   try {
-    game.cure(game.get_player(0).role, to_discard);
+    game.cure(game.get_state().players[0].role, to_discard);
   } catch(std::invalid_argument e) {
     exception_thrown = true;
     assert_equal<std::string>(e.what(), "Curing a disease may only occur in a city with a research facility.");
@@ -817,9 +831,9 @@ TEST(cure_requires_research_facility) {
 
   assert_true(exception_thrown, "Attempting to cure without a research facility should be illegal.");
   // The player's hand shouldn't be different after a failure.
-  assert_equal<int>(game.get_player(0).hand.contents.size(), cards_in_hand.size());
+  assert_equal<int>(game.get_state().players[0].hand.contents.size(), cards_in_hand.size());
   for (int i = 0; i < cards_in_hand.size(); i++) {
-    assert_equal<std::string>(game.get_player(0).hand.contents[i].name, cards_in_hand[i].name);
+    assert_equal<std::string>(game.get_state().players[0].hand.contents[i].name, cards_in_hand[i].name);
   }
 }
 
@@ -830,15 +844,15 @@ TEST(cure) {
   // Suppose that player 0 has all of these cards.
   std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai", "Delhi"};
   for (int i = 0; i < 5; i++) {
-    game.add_card(game.get_player(0).role, card::Card(to_discard[i], card::player));
+    game.add_card(game.get_state().players[0].role, card::Card(to_discard[i], card::player));
   }
-  std::vector<card::Card> cards_in_hand = game.get_player(0).hand.contents;
+  std::vector<card::Card> cards_in_hand = game.get_state().players[0].hand.contents;
   
   // Cure the disease
-  game.cure(game.get_player(0).role, to_discard);
+  game.cure(game.get_state().players[0].role, to_discard);
 
   // The player's hand should have discarded the cards.
-  assert_equal<int>(game.get_player(0).hand.contents.size(), cards_in_hand.size() - 5);
+  assert_equal<int>(game.get_state().players[0].hand.contents.size(), cards_in_hand.size() - 5);
   bool discarded;
   for (int i = 0; i < cards_in_hand.size(); i++) {
     discarded = false;
@@ -846,16 +860,16 @@ TEST(cure) {
       if (cards_in_hand[i].name == to_discard[j]) {
         discarded = true;
         std::string message = "The player's hand shouldn't contain " + to_discard[j];
-        assert_false(card::contains(game.get_player(0).hand, to_discard[j]), message.c_str());
+        assert_false(card::contains(game.get_state().players[0].hand, to_discard[j]), message.c_str());
         break;
       }
     }
     if (!discarded) {
       std::string message = "The player's hand should still contain " + cards_in_hand[i].name;
-      assert_true(card::contains(game.get_player(0).hand, cards_in_hand[i].name), message.c_str());
+      assert_true(card::contains(game.get_state().players[0].hand, cards_in_hand[i].name), message.c_str());
     }
   }
-  assert_true(game.get_status(disease::black).cured, "The disease should be cured.");
+  assert_true(game.get_state().diseases[disease::black].cured, "The disease should be cured.");
 }
 
 TEST(cure_as_scientist_requires_four_cards_in_hand) {
@@ -983,7 +997,7 @@ TEST(cure_as_scientist) {
       assert_true(card::contains(game.get_player(player::scientist).hand, cards_in_hand[i].name), message.c_str());
     }
   }
-  assert_true(game.get_status(disease::black).cured, "The disease should be cured.");
+  assert_true(game.get_state().diseases[disease::black].cured, "The disease should be cured.");
 }
 TEST(reclaim_requires_event_type) {
   Game game;
@@ -1020,13 +1034,13 @@ TEST(reclaim) {
   game.add_role(player::contingency_planner);
   game.discard(card::Card(ONE_QUIET_NIGHT, card::player, card::one_quiet_night));
 
-  assert_false(card::contains(game.get_contingency_card(), ONE_QUIET_NIGHT), "The event card should not be on the contingency planner card initially.");
-  assert_equal<int>(game.get_player_discard().size(), 1);
+  assert_false(card::contains(game.get_state().contingency_card, ONE_QUIET_NIGHT), "The event card should not be on the contingency planner card initially.");
+  assert_equal<int>(game.get_state().player_deck.get_discard_contents().size(), 1);
 
 
   game.reclaim(ONE_QUIET_NIGHT);
-  assert_true(card::contains(game.get_contingency_card(), ONE_QUIET_NIGHT), "The event card should be on the contingency planner card after reclaiming it.");
-  assert_equal<int>(game.get_player_discard().size(), 0);
+  assert_true(card::contains(game.get_state().contingency_card, ONE_QUIET_NIGHT), "The event card should be on the contingency planner card after reclaiming it.");
+  assert_equal<int>(game.get_state().player_deck.get_discard_contents().size(), 0);
 }
 TEST(reclaim_limited_to_one) {
   Game game;
@@ -1035,17 +1049,17 @@ TEST(reclaim_limited_to_one) {
   game.discard(card::Card(ONE_QUIET_NIGHT, card::player, card::one_quiet_night));
   game.discard(card::Card(RESILIENT_POPULATION, card::player, card::resilient_population));
 
-  assert_equal<int>(game.get_player_discard().size(), 2);
+  assert_equal<int>(game.get_state().player_deck.get_discard_contents().size(), 2);
 
   game.reclaim(ONE_QUIET_NIGHT);
-  assert_true(card::contains(game.get_contingency_card(), ONE_QUIET_NIGHT), "The reclaimed event card should be on the contingency planner card after reclaiming it.");
-  assert_false(card::contains(game.get_contingency_card(), RESILIENT_POPULATION), "The other event card should not be on the contingency planner card.");
+  assert_true(card::contains(game.get_state().contingency_card, ONE_QUIET_NIGHT), "The reclaimed event card should be on the contingency planner card after reclaiming it.");
+  assert_false(card::contains(game.get_state().contingency_card, RESILIENT_POPULATION), "The other event card should not be on the contingency planner card.");
 
   game.reclaim(RESILIENT_POPULATION);
-  assert_false(card::contains(game.get_contingency_card(), ONE_QUIET_NIGHT), "The old event card should be evicted from the contingency planner card after reclaiming it.");
-  assert_true(card::contains(game.get_contingency_card(), RESILIENT_POPULATION), "The newly reclaimed event card should be on the contingency planner card.");
+  assert_false(card::contains(game.get_state().contingency_card, ONE_QUIET_NIGHT), "The old event card should be evicted from the contingency planner card after reclaiming it.");
+  assert_true(card::contains(game.get_state().contingency_card, RESILIENT_POPULATION), "The newly reclaimed event card should be on the contingency planner card.");
 
-  assert_equal<int>(game.get_player_discard().size(), 0);
+  assert_equal<int>(game.get_state().player_deck.get_discard_contents().size(), 0);
 }
 TEST(reclaim_requires_contingency_planner) {
   Game game;
@@ -1127,13 +1141,13 @@ TEST(company_plane) {
   game.company_plane(destination, to_discard);
 
   assert_false(card::contains(game.get_player(player::operations_expert).hand, to_discard), "The discarded card should be removed from the Operations Expert's hand.");
-  assert_equal(game.get_player_discard().back().name, to_discard);
-  assert_equal(game.get_location(player::operations_expert), destination);
+  assert_equal(game.get_state().player_deck.get_discard_contents().back().name, to_discard);
+  assert_equal(game.get_state().player_locations[player::operations_expert], destination);
 }
 
 TEST(get_infection_discard) {
   Game game;
   game.setup();
 
-  assert_equal<int>(game.get_infection_discard().size(), 9);
+  assert_equal<int>(game.get_state().infection_deck.get_discard_contents().size(), 9);
 }
