@@ -13,12 +13,4 @@ namespace gerryfudd::types::city {
   }
 
   CityState::CityState(): research_facility{false} {}
-  bool CityState::prevent_placement(disease::DiseaseColor color) {
-    for (std::vector<disease::DiseaseColor>::iterator cursor = protected_colors.begin(); cursor != protected_colors.end(); cursor++) {
-      if (color == *cursor) {
-        return true;
-      }
-    }
-    return false;
-  }
 }

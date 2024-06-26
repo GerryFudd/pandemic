@@ -17,10 +17,8 @@ namespace gerryfudd::types::city {
 
   struct CityState {
     std::map<disease::DiseaseColor, int> disease_count;
-    std::vector<disease::DiseaseColor> protected_colors;
     bool research_facility;
     CityState();
-    bool prevent_placement(disease::DiseaseColor);
   };
 }
 #endif

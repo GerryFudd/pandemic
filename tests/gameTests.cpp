@@ -2,6 +2,7 @@
 #include <Assertions.inl>
 #include <game.hpp>
 #include <set>
+#include <data/city_data.hpp>
 
 using namespace gerryfudd::test;
 using namespace gerryfudd::core;
@@ -22,11 +23,7 @@ TEST(get_state) {
 }
 
 TEST(setup_initial_state) {
-  Game game;
-
-  game.setup();
-
-  GameState game_state = game.get_state();
+  GameState game_state = initialize_state();
 
   assert_equal<int>(game_state.cities.size(), 48);
 
@@ -57,11 +54,7 @@ TEST(setup_initial_state) {
 }
 
 TEST(setup_and_get_disease_counts) {
-  Game game;
-
-  game.setup();
-
-  GameState game_state = game.get_state();
+  GameState game_state = initialize_state();
 
   city::City current_city;
   city::CityState current_state;
@@ -69,7 +62,7 @@ TEST(setup_and_get_disease_counts) {
 
   for (std::map<std::string, city::City>::iterator cursor = game_state.cities.begin(); cursor != game_state.cities.end(); cursor++) {
     current_city = cursor->second;
-    current_state = game.get_state().board[cursor->first];
+    current_state = game_state.board[cursor->first];
     current_count = current_state.disease_count[current_city.color];
     switch (current_count)
     {
@@ -93,9 +86,7 @@ TEST(setup_and_get_disease_counts) {
 }
 
 TEST(setup_and_disease_reserve) {
-  Game game;
-  game.setup();
-  GameState game_state = game.get_state();
+  GameState game_state = initialize_state();
 
   int total_reserve = 0;
   total_reserve += game_state.diseases[disease::black].reserve;
@@ -107,24 +98,19 @@ TEST(setup_and_disease_reserve) {
 }
 
 TEST(setup_and_players) {
-  Game game;
   GameState game_state;
-
-  game.setup(easy, 2);
-  game_state = game.get_state();
+  game_state = initialize_state(easy, 2);
   assert_equal<int>(game_state.players.size(), 2);
   assert_equal<std::string>(game_state.player_locations[game_state.players[0].role], CDC_LOCATION);
   assert_equal<std::string>(game_state.player_locations[game_state.players[1].role], CDC_LOCATION);
 
-  game.setup(easy, 3);
-  game_state = game.get_state();
+  game_state = initialize_state(easy, 3);
   assert_equal<int>(game_state.players.size(), 3);
   assert_equal<std::string>(game_state.player_locations[game_state.players[0].role], CDC_LOCATION);
   assert_equal<std::string>(game_state.player_locations[game_state.players[1].role], CDC_LOCATION);
   assert_equal<std::string>(game_state.player_locations[game_state.players[2].role], CDC_LOCATION);
 
-  game.setup(easy, 4);
-  game_state = game.get_state();
+  game_state = initialize_state(easy, 4);
   assert_equal<int>(game_state.players.size(), 4);
   assert_equal<std::string>(game_state.player_locations[game_state.players[0].role], CDC_LOCATION);
   assert_equal<std::string>(game_state.player_locations[game_state.players[1].role], CDC_LOCATION);
@@ -133,23 +119,19 @@ TEST(setup_and_players) {
 }
 
 TEST(setup_and_get_research_facility) {
-  Game game;
-  game.setup();
-  GameState game_state = game.get_state();
+  GameState game_state = initialize_state();
 
   assert_true(game_state.board[CDC_LOCATION].research_facility, "The CDC location starts with a research facility.");
   assert_equal(game_state.research_facility_reserve, 5);
 }
 
 TEST(setup_get_player_by_role) {
-  Game game;
-  game.setup(easy, 4);
-  GameState game_state = game.get_state();
+  GameState game_state = initialize_state(easy, 4);
 
   assert_equal<int>(game_state.players.size(), 4);
 
   for (std::vector<player::Player>::iterator cursor = game_state.players.begin(); cursor != game_state.players.end(); cursor++) {
-    player::Player player_by_role = game.get_player(cursor->role);
+    player::Player player_by_role = game_state.get_player(cursor->role);
     assert_equal(player_by_role.role, cursor->role);
     assert_equal<int>(cursor->hand.contents.size(), 2);
     assert_equal<int>(player_by_role.hand.contents.size(), 2);
@@ -160,22 +142,20 @@ TEST(setup_get_player_by_role) {
 }
 
 TEST(get_initial_infection_rate) {
-  Game game;
-  game.setup();
-  assert_equal(game.get_state().infection_rate_level, 0);
-  assert_equal(game.get_state().get_infection_rate(), 2);
+  GameState game_state = initialize_state();
+  assert_equal(game_state.infection_rate_level, 0);
+  assert_equal(game_state.get_infection_rate(), 2);
 }
 
 TEST(draw_infection_card) {
-  Game game;
-  game.setup(easy, 4);
-  GameState game_state = game.get_state();
+  GameState game_state = initialize_state(easy, 4);
 
   int reserve_black{game_state.diseases[disease::black].reserve},
   reserve_blue{game_state.diseases[disease::blue].reserve},
   reserve_red{game_state.diseases[disease::red].reserve},
   reserve_yellow{game_state.diseases[disease::yellow].reserve};
 
+  Game game{game_state};
   assert_false(game.draw_infection_card(), "The game should not end in a loss after one infection card.");
   assert_false(game.draw_infection_card(), "The game should not end in a loss after two infection cards.");
 
@@ -215,9 +195,8 @@ TEST(draw_infection_card) {
 }
 
 TEST(drive) {
-  Game game;
-  game.setup(easy, 4);
-  GameState game_state = game.get_state();
+  GameState game_state = initialize_state(easy, 4);
+  Game game{game_state};
   
   player::Role first_role = game_state.players[0].role;
   city::City first_player_location = game_state.cities[game_state.player_locations[first_role]];
@@ -232,9 +211,8 @@ TEST(drive) {
 }
 
 TEST(drive_requires_neighboring_city) {
-  Game game;
-  game.setup(easy, 4);
-  GameState game_state = game.get_state();
+  GameState game_state = initialize_state(easy, 4);
+  Game game{game_state};
   
   player::Role first_role = game_state.players[0].role;
 
@@ -249,109 +227,133 @@ TEST(drive_requires_neighboring_city) {
   assert_true(exception_thrown, "An exception should be thrown if you attempt an illegal drive.");
 }
 
-TEST(drive_updates_protection) {
-  Game game;
-  game.setup(easy, 4);
-  game.add_role(player::quarantine_specialist);
-  GameState game_state = game.get_state();
+TEST(drive_updates_protection_quarantine_specialist) {
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
 
-  std::string destination = game.get_state().cities[CDC_LOCATION].neighbors[0].name;
+  game_state.players.push_back(player::Player(player::quarantine_specialist));
+  game_state.player_locations[player::quarantine_specialist] = CDC_LOCATION;
+  Game game{game_state};
+
+  std::string destination = game_state.cities[CDC_LOCATION].neighbors[0].name;
   game.drive(player::quarantine_specialist, destination);
 
   // The destination is protected
-  assert_true(game.get_state().board[destination].prevent_placement(disease::black), "Quarantine specialist should prevent black cubes in the city they occupy.");
-  assert_true(game.get_state().board[destination].prevent_placement(disease::blue), "Quarantine specialist should prevent blue cubes in the city they occupy.");
-  assert_true(game.get_state().board[destination].prevent_placement(disease::red), "Quarantine specialist should prevent red cubes in the city they occupy.");
-  assert_true(game.get_state().board[destination].prevent_placement(disease::yellow), "Quarantine specialist should prevent yellow cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(destination, disease::black), "Quarantine specialist should prevent black cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(destination, disease::blue), "Quarantine specialist should prevent blue cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(destination, disease::red), "Quarantine specialist should prevent red cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(destination, disease::yellow), "Quarantine specialist should prevent yellow cubes in the city they occupy.");
 
   city::City destination_city = game.get_state().cities[destination];
   for (std::vector<city::City>::iterator cursor = destination_city.neighbors.begin(); cursor != destination_city.neighbors.end(); cursor++) {
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::black), "Quarantine specialist should prevent black cubes in all neighboring cities.");
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::blue), "Quarantine specialist should prevent blue cubes in all neighboring cities.");
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::red), "Quarantine specialist should prevent red cubes in all neighboring cities.");
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::yellow), "Quarantine specialist should prevent yellow cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::black), "Quarantine specialist should prevent black cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::blue), "Quarantine specialist should prevent blue cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::red), "Quarantine specialist should prevent red cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::yellow), "Quarantine specialist should prevent yellow cubes in all neighboring cities.");
+  }
+}
+
+TEST(drive_updates_protection_medic) {
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+
+  game_state.players.push_back(player::Player(player::medic));
+  game_state.player_locations[player::medic] = CDC_LOCATION;
+  game_state.diseases[disease::blue].cured = true;
+  Game game{game_state};
+
+  std::string destination = game_state.cities[CDC_LOCATION].neighbors[0].name;
+  game.drive(player::medic, destination);
+
+  // The destination is protected from blue disease only
+  assert_false(game.get_state().prevent_placement(destination, disease::black), "Medic should not prevent black cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(destination, disease::blue), "Medic should prevent blue cubes in the city they occupy.");
+  assert_false(game.get_state().prevent_placement(destination, disease::red), "Medic should not prevent red cubes in the city they occupy.");
+  assert_false(game.get_state().prevent_placement(destination, disease::yellow), "Medic should not prevent yellow cubes in the city they occupy.");
+
+  city::City destination_city = game.get_state().cities[destination];
+  for (std::vector<city::City>::iterator cursor = destination_city.neighbors.begin(); cursor != destination_city.neighbors.end(); cursor++) {
+    assert_false(game.get_state().prevent_placement(cursor->name, disease::black), "Medic should not prevent black cubes in any neighboring cities.");
+    assert_false(game.get_state().prevent_placement(cursor->name, disease::blue), "Medic should not prevent blue cubes in any neighboring cities.");
+    assert_false(game.get_state().prevent_placement(cursor->name, disease::red), "Medic should not prevent red cubes in any neighboring cities.");
+    assert_false(game.get_state().prevent_placement(cursor->name, disease::yellow), "Medic should not prevent yellow cubes in any neighboring cities.");
   }
 }
 
 TEST(setup_with_quarantine_specialist) {
-  Game game;
-  game.setup();
-  game.add_role(player::quarantine_specialist);
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+  game_state.players.push_back(player::Player(player::quarantine_specialist));
+  game_state.player_locations[player::quarantine_specialist] = CDC_LOCATION;
+  Game game{game_state};
 
   city::City cdc_location = game.get_state().cities[CDC_LOCATION];
-  assert_true(game.get_state().board[CDC_LOCATION].prevent_placement(disease::black), "Quarantine specialist should prevent black cubes in the city they occupy.");
-  assert_true(game.get_state().board[CDC_LOCATION].prevent_placement(disease::blue), "Quarantine specialist should prevent blue cubes in the city they occupy.");
-  assert_true(game.get_state().board[CDC_LOCATION].prevent_placement(disease::red), "Quarantine specialist should prevent red cubes in the city they occupy.");
-  assert_true(game.get_state().board[CDC_LOCATION].prevent_placement(disease::yellow), "Quarantine specialist should prevent yellow cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(CDC_LOCATION, disease::black), "Quarantine specialist should prevent black cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(CDC_LOCATION, disease::blue), "Quarantine specialist should prevent blue cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(CDC_LOCATION, disease::red), "Quarantine specialist should prevent red cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(CDC_LOCATION, disease::yellow), "Quarantine specialist should prevent yellow cubes in the city they occupy.");
 
   for (std::vector<city::City>::iterator cursor = cdc_location.neighbors.begin(); cursor != cdc_location.neighbors.end(); cursor++) {
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::black), "Quarantine specialist should prevent black cubes in all neighboring cities.");
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::blue), "Quarantine specialist should prevent blue cubes in all neighboring cities.");
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::red), "Quarantine specialist should prevent red cubes in all neighboring cities.");
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::yellow), "Quarantine specialist should prevent yellow cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::black), "Quarantine specialist should prevent black cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::blue), "Quarantine specialist should prevent blue cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::red), "Quarantine specialist should prevent red cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::yellow), "Quarantine specialist should prevent yellow cubes in all neighboring cities.");
   }
 }
 
 TEST(direct_flight_quarantine_specialist) {
-  Game game;
-  game.setup();
-  game.add_role(player::quarantine_specialist);
-  game.add_card(player::quarantine_specialist, card::Card("Istanbul", card::player, card::city));
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+
+  game_state.players.push_back(player::Player(player::quarantine_specialist));
+  game_state.player_locations[player::quarantine_specialist] = CDC_LOCATION;
   std::string destination = "Istanbul";
+  game_state.add_card(player::quarantine_specialist, card::Card(destination, card::player));
+  Game game{game_state};
+
   game.direct_flight(player::quarantine_specialist, destination);
 
   // The starting CDC location is unprotected
-  assert_false(game.get_state().board[CDC_LOCATION].prevent_placement(disease::black), "Quarantine specialist no longer prevents black cubes in the city they leave.");
-  assert_false(game.get_state().board[CDC_LOCATION].prevent_placement(disease::blue), "Quarantine specialist no longer prevents blue cubes in the city they leave.");
-  assert_false(game.get_state().board[CDC_LOCATION].prevent_placement(disease::red), "Quarantine specialist no longer prevents red cubes in the city they leave.");
-  assert_false(game.get_state().board[CDC_LOCATION].prevent_placement(disease::yellow), "Quarantine specialist no longer prevents yellow cubes in the city they leave.");
+  assert_false(game.get_state().prevent_placement(CDC_LOCATION, disease::black), "Quarantine specialist no longer prevents black cubes in the city they leave.");
+  assert_false(game.get_state().prevent_placement(CDC_LOCATION, disease::blue), "Quarantine specialist no longer prevents blue cubes in the city they leave.");
+  assert_false(game.get_state().prevent_placement(CDC_LOCATION, disease::red), "Quarantine specialist no longer prevents red cubes in the city they leave.");
+  assert_false(game.get_state().prevent_placement(CDC_LOCATION, disease::yellow), "Quarantine specialist no longer prevents yellow cubes in the city they leave.");
 
   city::City cdc_location = game.get_state().cities[CDC_LOCATION];
   for (std::vector<city::City>::iterator cursor = cdc_location.neighbors.begin(); cursor != cdc_location.neighbors.end(); cursor++) {
-    assert_false(game.get_state().board[cursor->name].prevent_placement(disease::black), "Quarantine specialist no longer prevents black cubes in the neighbors of the city they leave.");
-    assert_false(game.get_state().board[cursor->name].prevent_placement(disease::blue), "Quarantine specialist no longer prevents prevent blue cubes in the neighbors of the city they leave.");
-    assert_false(game.get_state().board[cursor->name].prevent_placement(disease::red), "Quarantine specialist no longer prevents prevent red cubes in the neighbors of the city they leave.");
-    assert_false(game.get_state().board[cursor->name].prevent_placement(disease::yellow), "Quarantine specialist no longer prevents prevent yellow cubes in the neighbors of the city they leave.");
+    assert_false(game.get_state().prevent_placement(cursor->name, disease::black), "Quarantine specialist no longer prevents black cubes in the neighbors of the city they leave.");
+    assert_false(game.get_state().prevent_placement(cursor->name, disease::blue), "Quarantine specialist no longer prevents prevent blue cubes in the neighbors of the city they leave.");
+    assert_false(game.get_state().prevent_placement(cursor->name, disease::red), "Quarantine specialist no longer prevents prevent red cubes in the neighbors of the city they leave.");
+    assert_false(game.get_state().prevent_placement(cursor->name, disease::yellow), "Quarantine specialist no longer prevents prevent yellow cubes in the neighbors of the city they leave.");
   }
 
   // The destination is protected
-  assert_true(game.get_state().board[destination].prevent_placement(disease::black), "Quarantine specialist should prevent black cubes in the city they occupy.");
-  assert_true(game.get_state().board[destination].prevent_placement(disease::blue), "Quarantine specialist should prevent blue cubes in the city they occupy.");
-  assert_true(game.get_state().board[destination].prevent_placement(disease::red), "Quarantine specialist should prevent red cubes in the city they occupy.");
-  assert_true(game.get_state().board[destination].prevent_placement(disease::yellow), "Quarantine specialist should prevent yellow cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(destination, disease::black), "Quarantine specialist should prevent black cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(destination, disease::blue), "Quarantine specialist should prevent blue cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(destination, disease::red), "Quarantine specialist should prevent red cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(destination, disease::yellow), "Quarantine specialist should prevent yellow cubes in the city they occupy.");
 
   city::City destination_city = game.get_state().cities[destination];
   for (std::vector<city::City>::iterator cursor = destination_city.neighbors.begin(); cursor != destination_city.neighbors.end(); cursor++) {
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::black), "Quarantine specialist should prevent black cubes in all neighboring cities.");
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::blue), "Quarantine specialist should prevent blue cubes in all neighboring cities.");
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::red), "Quarantine specialist should prevent red cubes in all neighboring cities.");
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::yellow), "Quarantine specialist should prevent yellow cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::black), "Quarantine specialist should prevent black cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::blue), "Quarantine specialist should prevent blue cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::red), "Quarantine specialist should prevent red cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::yellow), "Quarantine specialist should prevent yellow cubes in all neighboring cities.");
   }
 }
 
 TEST(direct_flight_requires_card) {
-  Game game;
-  game.setup();
-  GameState game_state = game.get_state();
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
 
-  std::string destination = "";
-  int player_index = 0, hand_index = 0;
-  while (destination == "") {
-    if (game_state.players[player_index].hand.contents[hand_index].type == card::city) {
-      destination = game_state.players[player_index].hand.contents[hand_index].name;
-    } else if (hand_index < game_state.players[player_index].hand.contents.size() - 1) {
-      hand_index++;
-    } else if (player_index < game_state.players.size() - 1) {
-      hand_index = 0;
-      player_index++;
-    } else {
-      throw AssertionFailure("Some player should have a city card.");
-    }
-  }
+  game_state.players.push_back(player::Player(player::contingency_planner));
+  game_state.player_locations[player::contingency_planner] = CDC_LOCATION;
+  std::string destination = "Istanbul";
+  Game game{game_state};
 
   bool exception_thrown = false;
   try {
-    game.direct_flight(game_state.players[(player_index + 1) % game_state.players.size()].role, destination);
+    game.direct_flight(player::contingency_planner, destination);
   } catch (std::invalid_argument e) {
     assert_equal<std::string>(e.what(), "This player doesn't have this card.");
     exception_thrown = true;
@@ -360,61 +362,55 @@ TEST(direct_flight_requires_card) {
 }
 
 TEST(charter_flight_quarantine_specialist) {
-  Game game;
-  game.setup();
-  game.add_role(player::quarantine_specialist);
-  game.add_card(player::quarantine_specialist, card::Card(CDC_LOCATION, card::player, card::city));
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+
+  game_state.players.push_back(player::Player(player::quarantine_specialist));
+  game_state.player_locations[player::quarantine_specialist] = CDC_LOCATION;
+  game_state.add_card(player::quarantine_specialist, card::Card(CDC_LOCATION, card::player));
+  Game game{game_state};
   std::string destination = "Istanbul";
   game.charter_flight(player::quarantine_specialist, destination);
 
   // The starting CDC location is unprotected
-  assert_false(game.get_state().board[CDC_LOCATION].prevent_placement(disease::black), "Quarantine specialist no longer prevents black cubes in the city they leave.");
-  assert_false(game.get_state().board[CDC_LOCATION].prevent_placement(disease::blue), "Quarantine specialist no longer prevents blue cubes in the city they leave.");
-  assert_false(game.get_state().board[CDC_LOCATION].prevent_placement(disease::red), "Quarantine specialist no longer prevents red cubes in the city they leave.");
-  assert_false(game.get_state().board[CDC_LOCATION].prevent_placement(disease::yellow), "Quarantine specialist no longer prevents yellow cubes in the city they leave.");
+  assert_false(game.get_state().prevent_placement(CDC_LOCATION, disease::black), "Quarantine specialist no longer prevents black cubes in the city they leave.");
+  assert_false(game.get_state().prevent_placement(CDC_LOCATION, disease::blue), "Quarantine specialist no longer prevents blue cubes in the city they leave.");
+  assert_false(game.get_state().prevent_placement(CDC_LOCATION, disease::red), "Quarantine specialist no longer prevents red cubes in the city they leave.");
+  assert_false(game.get_state().prevent_placement(CDC_LOCATION, disease::yellow), "Quarantine specialist no longer prevents yellow cubes in the city they leave.");
 
   city::City cdc_location = game.get_state().cities[CDC_LOCATION];
   for (std::vector<city::City>::iterator cursor = cdc_location.neighbors.begin(); cursor != cdc_location.neighbors.end(); cursor++) {
-    assert_false(game.get_state().board[cursor->name].prevent_placement(disease::black), "Quarantine specialist no longer prevents black cubes in the neighbors of the city they leave.");
-    assert_false(game.get_state().board[cursor->name].prevent_placement(disease::blue), "Quarantine specialist no longer prevents prevent blue cubes in the neighbors of the city they leave.");
-    assert_false(game.get_state().board[cursor->name].prevent_placement(disease::red), "Quarantine specialist no longer prevents prevent red cubes in the neighbors of the city they leave.");
-    assert_false(game.get_state().board[cursor->name].prevent_placement(disease::yellow), "Quarantine specialist no longer prevents prevent yellow cubes in the neighbors of the city they leave.");
+    assert_false(game.get_state().prevent_placement(cursor->name, disease::black), "Quarantine specialist no longer prevents black cubes in the neighbors of the city they leave.");
+    assert_false(game.get_state().prevent_placement(cursor->name, disease::blue), "Quarantine specialist no longer prevents prevent blue cubes in the neighbors of the city they leave.");
+    assert_false(game.get_state().prevent_placement(cursor->name, disease::red), "Quarantine specialist no longer prevents prevent red cubes in the neighbors of the city they leave.");
+    assert_false(game.get_state().prevent_placement(cursor->name, disease::yellow), "Quarantine specialist no longer prevents prevent yellow cubes in the neighbors of the city they leave.");
   }
 
   // The destination is protected
-  assert_true(game.get_state().board[destination].prevent_placement(disease::black), "Quarantine specialist should prevent black cubes in the city they occupy.");
-  assert_true(game.get_state().board[destination].prevent_placement(disease::blue), "Quarantine specialist should prevent blue cubes in the city they occupy.");
-  assert_true(game.get_state().board[destination].prevent_placement(disease::red), "Quarantine specialist should prevent red cubes in the city they occupy.");
-  assert_true(game.get_state().board[destination].prevent_placement(disease::yellow), "Quarantine specialist should prevent yellow cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(destination, disease::black), "Quarantine specialist should prevent black cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(destination, disease::blue), "Quarantine specialist should prevent blue cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(destination, disease::red), "Quarantine specialist should prevent red cubes in the city they occupy.");
+  assert_true(game.get_state().prevent_placement(destination, disease::yellow), "Quarantine specialist should prevent yellow cubes in the city they occupy.");
 
   city::City destination_city = game.get_state().cities[destination];
   for (std::vector<city::City>::iterator cursor = destination_city.neighbors.begin(); cursor != destination_city.neighbors.end(); cursor++) {
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::black), "Quarantine specialist should prevent black cubes in all neighboring cities.");
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::blue), "Quarantine specialist should prevent blue cubes in all neighboring cities.");
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::red), "Quarantine specialist should prevent red cubes in all neighboring cities.");
-    assert_true(game.get_state().board[cursor->name].prevent_placement(disease::yellow), "Quarantine specialist should prevent yellow cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::black), "Quarantine specialist should prevent black cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::blue), "Quarantine specialist should prevent blue cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::red), "Quarantine specialist should prevent red cubes in all neighboring cities.");
+    assert_true(game.get_state().prevent_placement(cursor->name, disease::yellow), "Quarantine specialist should prevent yellow cubes in all neighboring cities.");
   }
 }
 
 TEST(charter_flight_requires_card) {
-  Game game;
-  game.setup();
-  GameState game_state = game.get_state();
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+  game_state.players.push_back(player::Player(player::contingency_planner));
 
-  card::Hand first_player_hand = game_state.players[0].hand;
-
-  // This is the index of a player that doesn't have the starting location in their hand.
-  int player_index = 0;
-  for (std::vector<card::Card>::iterator cursor = first_player_hand.contents.begin(); cursor != first_player_hand.contents.end(); cursor++) {
-    if (cursor->name == CDC_LOCATION) {
-      player_index = 1;
-      break;
-    }
-  }
+  Game game{game_state};
 
   bool exception_thrown = false;
   try {
-    game.charter_flight(game_state.players[player_index].role, "Istanbul");
+    game.charter_flight(player::contingency_planner, "Istanbul");
   } catch (std::invalid_argument e) {
     assert_equal<std::string>(e.what(), "This player doesn't have this card.");
     exception_thrown = true;
@@ -423,8 +419,7 @@ TEST(charter_flight_requires_card) {
 }
 
 TEST(shuttle) {
-  Game game;
-  game.setup();
+  Game game{initialize_state()};
 
   std::string destination = "Istanbul";
   game.place_research_facility(destination);
@@ -436,13 +431,11 @@ TEST(shuttle) {
 }
 
 TEST(shuttle_requires_research_facility) {
-  Game game;
-  game.setup();
-  GameState game_state = game.get_state();
+  Game game{initialize_state()};
 
   bool exception_thrown = false;
   try {
-    game.shuttle(game_state.players[0].role, "Istanbul");
+    game.shuttle(game.get_state().players[0].role, "Istanbul");
   } catch(std::invalid_argument e) {
     exception_thrown = true;
   }
@@ -450,34 +443,39 @@ TEST(shuttle_requires_research_facility) {
 }
 
 TEST(dispatcher_direct_flight) {
-  Game game;
-  game.setup();
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
 
-  game.add_role(player::dispatcher);
-  game.add_card(player::dispatcher, card::Card("Istanbul", card::player));
-  GameState game_state = game.get_state();
+  game_state.players.push_back(player::Player(player::dispatcher));
+  game_state.player_locations[player::dispatcher] = CDC_LOCATION;
 
-  player::Role other_role = game_state.players[0].role == player::dispatcher ? game_state.players[1].role : game_state.players[0].role;
-  game.drive(other_role, game.get_state().cities[CDC_LOCATION].neighbors[0].name);
+  std::string destination = "Istanbul";
+  player::Role other_role = player::contingency_planner;
 
-  game.dispatcher_direct_flight(other_role, "Istanbul");
+  game_state.add_card(player::dispatcher, card::Card(destination, card::player));
 
-  assert_equal<std::string>(game.get_state().player_locations[other_role], "Istanbul");
+  game_state.players.push_back(player::Player(other_role));
+  game_state.player_locations[other_role] = game_state.cities[CDC_LOCATION].neighbors[0].name;
+  Game game{game_state};
+
+  game.dispatcher_direct_flight(other_role, destination);
+
+  assert_equal<std::string>(game.get_state().player_locations[other_role], destination);
 }
 
 TEST(dispatcher_direct_flight_requires_card) {
-  Game game;
-  game.setup();
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
 
-  game.add_role(player::dispatcher);
-  try {
-    game.remove_player_card(player::dispatcher, "Istanbul");
-  } catch(std::invalid_argument) {
-    // Ignore this failure. This test requires that the dispatcher doesn't have this card. This may have been the case before.
-  }
-  GameState game_state = game.get_state();
+  game_state.players.push_back(player::Player(player::dispatcher));
+  game_state.player_locations[player::dispatcher] = CDC_LOCATION;
 
-  player::Role other_role = game_state.players[0].role == player::dispatcher ? game_state.players[1].role : game_state.players[0].role;
+  std::string destination = "Istanbul";
+  player::Role other_role = player::contingency_planner;
+  
+  game_state.players.push_back(player::Player(other_role));
+  game_state.player_locations[other_role] = game_state.cities[CDC_LOCATION].neighbors[0].name;
+  Game game{game_state};
 
   bool exception_thrown = false;
   try {
@@ -490,35 +488,44 @@ TEST(dispatcher_direct_flight_requires_card) {
 }
 
 TEST(dispatcher_charter_flight) {
-  Game game;
-  game.setup();
-  game.add_role(player::dispatcher);
-  game.add_card(player::dispatcher, card::Card(CDC_LOCATION, card::player));
-  GameState game_state = game.get_state();
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
 
-  player::Role other_role = game_state.players[0].role == player::dispatcher ? game_state.players[1].role : game_state.players[0].role;
+  game_state.players.push_back(player::Player(player::dispatcher));
+  game_state.player_locations[player::dispatcher] = CDC_LOCATION;
 
-  game.dispatcher_charter_flight(other_role, "Istanbul");
+  std::string destination = "Istanbul";
+  player::Role other_role = player::contingency_planner;
 
-  assert_equal<std::string>(game.get_state().player_locations[other_role], "Istanbul");
+  
+  game_state.players.push_back(player::Player(other_role));
+  game_state.player_locations[other_role] = game_state.cities[CDC_LOCATION].neighbors[0].name;
+  game_state.add_card(player::dispatcher, card::Card(game_state.player_locations[other_role], card::player));
+  Game game{game_state};
+
+  game.dispatcher_charter_flight(other_role, destination);
+
+  assert_equal<std::string>(game.get_state().player_locations[other_role], destination);
 }
 
 TEST(dispatcher_charter_flight_requires_card) {
-  Game game;
-  game.setup();
-  game.add_role(player::dispatcher);
-  try {
-    game.remove_player_card(player::dispatcher, CDC_LOCATION);
-  } catch(std::invalid_argument) {
-    // Ignore this failure. This test requires that the dispatcher doesn't have this card. This may have been the case before.
-  }
-  GameState game_state = game.get_state();
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
 
-  player::Role other_role = game_state.players[0].role == player::dispatcher ? game_state.players[1].role : game_state.players[0].role;
+  game_state.players.push_back(player::Player(player::dispatcher));
+  game_state.player_locations[player::dispatcher] = CDC_LOCATION;
+
+  std::string destination = "Istanbul";
+  player::Role other_role = player::contingency_planner;
+
+  
+  game_state.players.push_back(player::Player(other_role));
+  game_state.player_locations[other_role] = game_state.cities[CDC_LOCATION].neighbors[0].name;
+  Game game{game_state};
 
   bool exception_thrown = false;
   try {
-    game.dispatcher_charter_flight(other_role, "Istanbul");
+    game.dispatcher_charter_flight(other_role, destination);
   } catch (std::invalid_argument e) {
     assert_equal<std::string>(e.what(), "This player doesn't have this card.");
     exception_thrown = true;
@@ -527,124 +534,85 @@ TEST(dispatcher_charter_flight_requires_card) {
 }
 
 TEST(dispatcher_conference) {
-  Game game;
-  game.setup(easy, 3);
-  game.add_role(player::dispatcher);
-  GameState game_state = game.get_state();
-  player::Role other_roles[2];
-  int i, adjust = 0;
-  for (i = 0; i < 3; i++) {
-    if (game_state.players[i].role == player::dispatcher) {
-      adjust = -1;
-    } else {
-      other_roles[i + adjust] = game_state.players[i].role;
-    }
-  }
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
 
-  game.add_card(other_roles[1], card::Card("Istanbul", card::player));
-  game.direct_flight(other_roles[1], "Istanbul");
+  game_state.players.push_back(player::Player(player::dispatcher));
+  game_state.player_locations[player::dispatcher] = CDC_LOCATION;
+
+  std::string destination = "Istanbul";
+  player::Role other_roles[] = {player::contingency_planner, player::medic };
+
+  
+  game_state.players.push_back(player::Player(other_roles[0]));
+  game_state.player_locations[other_roles[0]] = CDC_LOCATION;
+  game_state.players.push_back(player::Player(other_roles[1]));
+  game_state.player_locations[other_roles[1]] = "Istanbul";
+  Game game{game_state};
 
   game.dispatcher_conference(other_roles[0], other_roles[1]);
   assert_equal<std::string>(game.get_state().player_locations[other_roles[0]], "Istanbul");
 }
 
 TEST(treat) {
-  Game game;
-  game.setup();
-  GameState game_state = game.get_state();
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+  player::Role non_medic = player::contingency_planner;
 
-  // Any game will have at least one role that isn't the medic. Given a scenario where this player has the CDC location card. This enables them to charter a flight anywhere.
-  player::Role other_role = game_state.players[0].role == player::medic ? game_state.players[1].role : game_state.players[0].role;
-  game.add_card(other_role, card::Card(CDC_LOCATION, card::player));
+  game_state.players.push_back(player::Player(non_medic));
+  game_state.player_locations[non_medic] = CDC_LOCATION;
+  game_state.board[CDC_LOCATION].disease_count[disease::blue] = 3;
 
-  game_state = game.get_state();
-  std::string city_with_three;
-  for (std::map<std::string, city::City>::iterator cursor = game_state.cities.begin(); cursor != game_state.cities.end(); cursor++) {
-    if (game.get_state().board[cursor->first].disease_count[cursor->second.color] == 3) {
-      // Given a city with three disease markers.
-      city_with_three = cursor->first;
-      break;
-    }
-  }
+  Game game{game_state};
 
-  // Have the non-medic fly to this city and treat the disease.
-  game.charter_flight(other_role, city_with_three);
-  game.treat(other_role, game.get_state().cities[city_with_three].color);
+  // Have the non-medic treat the disease.
+  game.treat(non_medic, disease::blue);
 
   // Then there should be two disease markers left.
-  assert_equal(game.get_state().board[city_with_three].disease_count[game.get_state().cities[city_with_three].color], 2);
+  assert_equal(game.get_state().board[CDC_LOCATION].disease_count[disease::blue], 2);
 }
 
 TEST(treat_as_medic) {
-  Game game;
-  game.setup();
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
 
-  // Given a game with a medic where the medic has the CDC location card. This enables the medic to charter a flight anywhere.
-  game.add_role(player::medic);
-  game.add_card(player::medic, card::Card(CDC_LOCATION, card::player));
+  game_state.players.push_back(player::Player(player::medic));
+  game_state.player_locations[player::medic] = CDC_LOCATION;
+  game_state.board[CDC_LOCATION].disease_count[disease::blue] = 3;
 
-  GameState game_state = game.get_state();
-  std::string city_with_three;
-  for (std::map<std::string, city::City>::iterator cursor = game_state.cities.begin(); cursor != game_state.cities.end(); cursor++) {
-    if (game.get_state().board[cursor->first].disease_count[cursor->second.color] == 3) {
-      // Given a city with three disease markers.
-      city_with_three = cursor->first;
-      break;
-    }
-  }
+  Game game{game_state};
 
-  // Have the medic fly to this city and treat the disease.
-  game.charter_flight(player::medic, city_with_three);
-  game.treat(player::medic, game.get_state().cities[city_with_three].color);
+  // Have the medic treat the disease.
+  game.treat(player::medic, disease::blue);
 
   // Then there should be no disease markers left.
-  assert_equal(game.get_state().board[city_with_three].disease_count[game.get_state().cities[city_with_three].color], 0);
+  assert_equal(game.get_state().board[CDC_LOCATION].disease_count[disease::blue], 0);
 }
 
 TEST(share) {
-  Game game;
-  game.setup();
-  GameState game_state = game.get_state();
-  
-  // There will be a player that isn't the researcher. Get their role and one other (the other player may or may not be the researcher).
-  int non_researcher_index = game_state.players[0].role == player::researcher;
-  player::Role non_researcher = game_state.players[non_researcher_index].role, other_role = game_state.players[!non_researcher_index].role;
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
 
-  // Ensure that the non-researcher has the card of the starting location and that the other player doesn't have this card.
-  game.add_card(non_researcher, card::Card(CDC_LOCATION, card::player));
-  try {
-    game.remove_player_card(other_role, CDC_LOCATION);
-  } catch(std::invalid_argument) {} // Ignore the exception if the player doesn't have this card already.
+  game_state.players.push_back(player::Player(player::contingency_planner));
+  game_state.player_locations[player::contingency_planner] = CDC_LOCATION;
+  game_state.add_card(player::contingency_planner, card::Card(CDC_LOCATION, card::player));
+
+  game_state.players.push_back(player::Player(player::dispatcher));
+  game_state.player_locations[player::dispatcher] = CDC_LOCATION;
+
+  Game game{game_state};
 
   // Share the CDC_LOCATION card.
-  game.share(non_researcher, other_role);
+  game.share(player::contingency_planner, player::dispatcher);
 
-  card::Hand other_player_hand = game.get_player(other_role).hand,
-    non_researcher_hand = game.get_player(non_researcher).hand;
-
-  bool other_role_has_card = false;
-  for (std::vector<card::Card>::iterator cursor = other_player_hand.contents.begin(); cursor != other_player_hand.contents.end(); cursor++) {
-    if (cursor->name == CDC_LOCATION) {
-      other_role_has_card = true;
-      break;
-    }
-  }
-  assert_true(other_role_has_card, "The card should be in the other player's hand.");
-
-  bool non_researcher_has_card = false;
-  for (std::vector<card::Card>::iterator cursor = non_researcher_hand.contents.begin(); cursor != non_researcher_hand.contents.end(); cursor++) {
-    if (cursor->name == CDC_LOCATION) {
-      non_researcher_has_card = true;
-      break;
-    }
-  }
-  assert_false(non_researcher_has_card, "The card should be removed from the non-researcher's hand.");
+  assert_equal<int>(game.get_state().get_player(player::contingency_planner).hand.contents.size(), 0);
+  assert_equal<int>(game.get_state().get_player(player::dispatcher).hand.contents.size(), 1);
+  assert_equal<std::string>(game.get_state().get_player(player::dispatcher).hand.contents[0].name, CDC_LOCATION);
 }
 
 TEST(share_requires_card_of_city) {
-  Game game;
-  game.setup();
-  GameState game_state = game.get_state();
+  GameState game_state = initialize_state();
+  Game game{game_state};
   
   // There will be a player that isn't the researcher. Get their role and one other (the other player may or may not be the researcher).
   int non_researcher_index = game_state.players[0].role == player::researcher;
@@ -669,17 +637,21 @@ TEST(share_requires_card_of_city) {
 }
 
 TEST(share_requires_same_city) {
-  Game game;
-  game.setup();
+  GameState game_state{};
   // Ensure that the player at index 0 has the starting location card.
-  game.add_card(game.get_state().players[0].role, card::Card(CDC_LOCATION, card::player));
-  // Move the player at index 1 elsewhere.
-  game.drive(game.get_state().players[1].role, game.get_state().cities[CDC_LOCATION].neighbors[0].name);
+  game_state.players.push_back(player::Player(player::contingency_planner));
+  game_state.player_locations[player::contingency_planner] = CDC_LOCATION;
+  game_state.add_card(player::contingency_planner, card::Card(CDC_LOCATION, card::player));
+
+  game_state.players.push_back(player::Player(player::dispatcher));
+  game_state.player_locations[player::dispatcher] = "Istanbul";
+
+  Game game{game_state};
 
   // Attempt to share the CDC_LOCATION card.
   bool exception_thrown = false;
   try {
-    game.share(game.get_state().players[0].role, game.get_state().players[1].role);
+    game.share(player::contingency_planner, player::dispatcher);
   } catch(std::invalid_argument e) {
     exception_thrown = true;
     assert_equal<std::string>(e.what(), "Players must be in the same city to share cards.");
@@ -690,55 +662,42 @@ TEST(share_requires_same_city) {
 }
 
 TEST(share_as_researcher) {
-  Game game;
-  game.setup();
-  game.add_role(player::researcher);
+  GameState game_state{};
   std::string non_starting_location = "Istanbul";
-  
-  // There will be a player that isn't the researcher. Get their role and one other (the other player may or may not be the researcher).
-  player::Role non_researcher = game.get_state().players[0].role == player::researcher ? game.get_state().players[1].role : game.get_state().players[0].role;
 
+  game_state.players.push_back(player::Player(player::researcher));
+  game_state.player_locations[player::researcher] = CDC_LOCATION;
   // Ensure that the researcher has some card other than the starting location and that the non-researcher doesn't have this card.
-  game.add_card(player::researcher, card::Card(non_starting_location, card::player));
-  try {
-    game.remove_player_card(non_researcher, non_starting_location);
-  } catch(std::invalid_argument) {} // Ignore the exception if the player doesn't have this card already.
+  game_state.add_card(player::researcher, card::Card(non_starting_location, card::player));
+
+  player::Role non_researcher = player::contingency_planner;
+  game_state.players.push_back(player::Player(non_researcher));
+  game_state.player_locations[non_researcher] = CDC_LOCATION;
+
+  Game game{game_state};
 
   // Share the non-starting location card.
   game.researcher_share(non_starting_location, non_researcher);
 
-  // Confirm that the card has changed hands
-  card::Hand researcher_hand = game.get_player(player::researcher).hand,
-    non_researcher_hand = game.get_player(non_researcher).hand;
-
-  bool researcher_has_card = false;
-  for (std::vector<card::Card>::iterator cursor = researcher_hand.contents.begin(); cursor != researcher_hand.contents.end(); cursor++) {
-    if (cursor->name == non_starting_location) {
-      researcher_has_card = true;
-      break;
-    }
-  }
-  assert_false(researcher_has_card, "The card should be removed from the researcher's hand.");
-
-  bool non_researcher_has_card = false;
-  for (std::vector<card::Card>::iterator cursor = non_researcher_hand.contents.begin(); cursor != non_researcher_hand.contents.end(); cursor++) {
-    if (cursor->name == non_starting_location) {
-      non_researcher_has_card = true;
-      break;
-    }
-  }
-  assert_true(non_researcher_has_card, "The card should be added to the non-researcher's hand.");
+  assert_equal<int>(game.get_state().get_player(player::researcher).hand.contents.size(), 0);
+  assert_equal<int>(game.get_state().get_player(non_researcher).hand.contents.size(), 1);
+  assert_equal<std::string>(game.get_state().get_player(non_researcher).hand.contents[0].name, non_starting_location);
 }
 
 TEST(share_as_researcher_requires_same_city) {
-  Game game;
-  game.setup();
-  game.add_role(player::researcher);
-  // Ensure that the researcher has the starting location card.
-  game.add_card(player::researcher, card::Card(CDC_LOCATION, card::player));
-  // Determine the other player's role. Move that player elsewhere.
-  player::Role non_researcher = game.get_state().players[0].role == player::researcher ? game.get_state().players[1].role : game.get_state().players[0].role;
-  game.drive(non_researcher, game.get_state().cities[CDC_LOCATION].neighbors[0].name);
+  GameState game_state{};
+  std::string non_starting_location = "Istanbul";
+
+  game_state.players.push_back(player::Player(player::researcher));
+  game_state.player_locations[player::researcher] = CDC_LOCATION;
+  // Ensure that the researcher has some card other than the starting location and that the non-researcher doesn't have this card.
+  game_state.add_card(player::researcher, card::Card(CDC_LOCATION, card::player));
+
+  player::Role non_researcher = player::contingency_planner;
+  game_state.players.push_back(player::Player(non_researcher));
+  game_state.player_locations[non_researcher] = non_starting_location;
+
+  Game game{game_state};
 
   // Attempt to share the CDC_LOCATION card.
   bool exception_thrown = false;
@@ -754,22 +713,22 @@ TEST(share_as_researcher_requires_same_city) {
 }
 
 TEST(cure_requires_five_cards_in_hand) {
-  Game game;
-  game.setup();
-  
-  // Suppose that player 0 has four of these cards.
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+  game_state.board[CDC_LOCATION].research_facility = true;
+
+  // Suppose that the contingency planner has four of these cards.
+  game_state.players.push_back(player::Player(player::contingency_planner));
+  game_state.player_locations[player::contingency_planner] = CDC_LOCATION;
   std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai", "Delhi"};
   for (int i = 0; i < 4; i++) {
-    game.add_card(game.get_state().players[0].role, card::Card(to_discard[i], card::player));
+    game_state.add_card(player::contingency_planner, card::Card(to_discard[i], card::player));
   }
-  try {
-    game.remove_player_card(game.get_state().players[0].role, to_discard[4]);
-  } catch(std::invalid_argument) {} // Ignore exception if card already missing.
-  std::vector<card::Card> cards_in_hand = game.get_state().players[0].hand.contents;
+  Game game{game_state};
   
   bool exception_thrown = false;
   try {
-    game.cure(game.get_state().players[0].role, to_discard);
+    game.cure(player::contingency_planner, to_discard);
   } catch(std::invalid_argument e) {
     exception_thrown = true;
     assert_equal<std::string>(e.what(), "This player doesn't have this card.");
@@ -777,22 +736,25 @@ TEST(cure_requires_five_cards_in_hand) {
 
   assert_true(exception_thrown, "Attempting to cure with cards that aren't in your hand should be illegal.");
   // The player's hand shouldn't be different after a failure.
-  assert_equal<int>(game.get_state().players[0].hand.contents.size(), cards_in_hand.size());
-  for (int i = 0; i < cards_in_hand.size(); i++) {
-    assert_equal<std::string>(game.get_state().players[0].hand.contents[i].name, cards_in_hand[i].name);
+  assert_equal<int>(game.get_state().get_player(player::contingency_planner).hand.contents.size(), 4);
+  for (int i = 0; i < 4; i++) {
+    assert_equal<std::string>(game.get_state().get_player(player::contingency_planner).hand.contents[i].name, to_discard[i]);
   }
 }
 
 TEST(cure_requires_five_cards_of_the_same_color) {
-  Game game;
-  game.setup();
-  
-  // Suppose that player 0 has all of these cards.
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+  game_state.board[CDC_LOCATION].research_facility = true;
+
+  // Suppose that the contingency planner has four of these cards.
+  game_state.players.push_back(player::Player(player::contingency_planner));
+  game_state.player_locations[player::contingency_planner] = CDC_LOCATION;
   std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai", "Atlanta"};
   for (int i = 0; i < 5; i++) {
-    game.add_card(game.get_state().players[0].role, card::Card(to_discard[i], card::player));
+    game_state.add_card(player::contingency_planner, card::Card(to_discard[i], card::player));
   }
-  std::vector<card::Card> cards_in_hand = game.get_state().players[0].hand.contents;
+  Game game{game_state};
   
   bool exception_thrown = false;
   try {
@@ -804,24 +766,24 @@ TEST(cure_requires_five_cards_of_the_same_color) {
 
   assert_true(exception_thrown, "Attempting to cure with cards that aren't the same color should be illegal.");
   // The player's hand shouldn't be different after a failure.
-  assert_equal<int>(game.get_state().players[0].hand.contents.size(), cards_in_hand.size());
-  for (int i = 0; i < cards_in_hand.size(); i++) {
-    assert_equal<std::string>(game.get_state().players[0].hand.contents[i].name, cards_in_hand[i].name);
+  assert_equal<int>(game.get_state().get_player(player::contingency_planner).hand.contents.size(), 5);
+  for (int i = 0; i < 5; i++) {
+    assert_equal<std::string>(game.get_state().get_player(player::contingency_planner).hand.contents[i].name, to_discard[i]);
   }
 }
 
 TEST(cure_requires_research_facility) {
-  Game game;
-  game.setup();
-  // Move player 0 away from the starting location.
-  game.drive(game.get_state().players[0].role, game.get_state().cities[CDC_LOCATION].neighbors[0].name);
-  
-  // Suppose that player 0 has all of these cards.
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+
+  // Suppose that the contingency planner has four of these cards.
+  game_state.players.push_back(player::Player(player::contingency_planner));
+  game_state.player_locations[player::contingency_planner] = CDC_LOCATION;
   std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai", "Delhi"};
   for (int i = 0; i < 5; i++) {
-    game.add_card(game.get_state().players[0].role, card::Card(to_discard[i], card::player));
+    game_state.add_card(player::contingency_planner, card::Card(to_discard[i], card::player));
   }
-  std::vector<card::Card> cards_in_hand = game.get_state().players[0].hand.contents;
+  Game game{game_state};
   
   bool exception_thrown = false;
   try {
@@ -833,61 +795,47 @@ TEST(cure_requires_research_facility) {
 
   assert_true(exception_thrown, "Attempting to cure without a research facility should be illegal.");
   // The player's hand shouldn't be different after a failure.
-  assert_equal<int>(game.get_state().players[0].hand.contents.size(), cards_in_hand.size());
-  for (int i = 0; i < cards_in_hand.size(); i++) {
-    assert_equal<std::string>(game.get_state().players[0].hand.contents[i].name, cards_in_hand[i].name);
+  assert_equal<int>(game.get_state().get_player(player::contingency_planner).hand.contents.size(), 5);
+  for (int i = 0; i < 5; i++) {
+    assert_equal<std::string>(game.get_state().get_player(player::contingency_planner).hand.contents[i].name, to_discard[i]);
   }
 }
 
 TEST(cure) {
-  Game game;
-  game.setup();
-  
-  // Suppose that player 0 has all of these cards.
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+  game_state.board[CDC_LOCATION].research_facility = true;
+
+  // Suppose that the contingency planner has four of these cards.
+  game_state.players.push_back(player::Player(player::contingency_planner));
+  game_state.player_locations[player::contingency_planner] = CDC_LOCATION;
   std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai", "Delhi"};
   for (int i = 0; i < 5; i++) {
-    game.add_card(game.get_state().players[0].role, card::Card(to_discard[i], card::player));
+    game_state.add_card(player::contingency_planner, card::Card(to_discard[i], card::player));
   }
-  std::vector<card::Card> cards_in_hand = game.get_state().players[0].hand.contents;
+  Game game{game_state};
   
   // Cure the disease
-  game.cure(game.get_state().players[0].role, to_discard);
+  game.cure(player::contingency_planner, to_discard);
 
   // The player's hand should have discarded the cards.
-  assert_equal<int>(game.get_state().players[0].hand.contents.size(), cards_in_hand.size() - 5);
-  bool discarded;
-  for (int i = 0; i < cards_in_hand.size(); i++) {
-    discarded = false;
-    for (int j = 0; j < 5; j++) {
-      if (cards_in_hand[i].name == to_discard[j]) {
-        discarded = true;
-        std::string message = "The player's hand shouldn't contain " + to_discard[j];
-        assert_false(card::contains(game.get_state().players[0].hand, to_discard[j]), message.c_str());
-        break;
-      }
-    }
-    if (!discarded) {
-      std::string message = "The player's hand should still contain " + cards_in_hand[i].name;
-      assert_true(card::contains(game.get_state().players[0].hand, cards_in_hand[i].name), message.c_str());
-    }
-  }
+  assert_equal<int>(game.get_state().get_player(player::contingency_planner).hand.contents.size(), 0);
   assert_true(game.get_state().diseases[disease::black].cured, "The disease should be cured.");
 }
 
 TEST(cure_as_scientist_requires_four_cards_in_hand) {
-  Game game;
-  game.setup();
-  game.add_role(player::scientist);
-  
-  // Suppose that the scientist has three of these cards.
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+  game_state.board[CDC_LOCATION].research_facility = true;
+
+  // Suppose that the contingency planner has four of these cards.
+  game_state.players.push_back(player::Player(player::scientist));
+  game_state.player_locations[player::scientist] = CDC_LOCATION;
   std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai"};
   for (int i = 0; i < 3; i++) {
-    game.add_card(player::scientist, card::Card(to_discard[i], card::player));
+    game_state.add_card(player::scientist, card::Card(to_discard[i], card::player));
   }
-  try {
-    game.remove_player_card(player::scientist, to_discard[3]);
-  } catch(std::invalid_argument) {}
-  std::vector<card::Card> cards_in_hand = game.get_player(player::scientist).hand.contents;
+  Game game{game_state};
   
   bool exception_thrown = false;
   try {
@@ -898,25 +846,26 @@ TEST(cure_as_scientist_requires_four_cards_in_hand) {
   }
 
   assert_true(exception_thrown, "Attempting to cure with cards that aren't in your hand should be illegal.");
-  // The scientist's hand shouldn't be different after a failure.
-  card::Hand hand_after_failure = game.get_player(player::scientist).hand;
-  assert_equal<int>(hand_after_failure.contents.size(), cards_in_hand.size());
-  for (int i = 0; i < cards_in_hand.size(); i++) {
-    assert_equal<std::string>(hand_after_failure.contents[i].name, cards_in_hand[i].name);
+  // The player's hand shouldn't be different after a failure.
+  assert_equal<int>(game.get_state().get_player(player::scientist).hand.contents.size(), 3);
+  for (int i = 0; i < 3; i++) {
+    assert_equal<std::string>(game.get_state().get_player(player::scientist).hand.contents[i].name, to_discard[i]);
   }
 }
 
 TEST(cure_as_scientist_requires_four_cards_of_the_same_color) {
-  Game game;
-  game.setup();
-  game.add_role(player::scientist);
-  
-  // Suppose that the scientists has all of these cards.
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+  game_state.board[CDC_LOCATION].research_facility = true;
+
+  // Suppose that the contingency planner has four of these cards.
+  game_state.players.push_back(player::Player(player::scientist));
+  game_state.player_locations[player::scientist] = CDC_LOCATION;
   std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Atlanta"};
   for (int i = 0; i < 4; i++) {
-    game.add_card(player::scientist, card::Card(to_discard[i], card::player));
+    game_state.add_card(player::scientist, card::Card(to_discard[i], card::player));
   }
-  std::vector<card::Card> cards_in_hand = game.get_player(player::scientist).hand.contents;
+  Game game{game_state};
   
   bool exception_thrown = false;
   try {
@@ -927,27 +876,25 @@ TEST(cure_as_scientist_requires_four_cards_of_the_same_color) {
   }
 
   assert_true(exception_thrown, "Attempting to cure with cards that aren't the same color should be illegal.");
-  // The scientist's hand shouldn't be different after a failure.
-  card::Hand hand_after_failure = game.get_player(player::scientist).hand;
-  assert_equal<int>(hand_after_failure.contents.size(), cards_in_hand.size());
-  for (int i = 0; i < cards_in_hand.size(); i++) {
-    assert_equal<std::string>(hand_after_failure.contents[i].name, cards_in_hand[i].name);
+  // The player's hand shouldn't be different after a failure.
+  assert_equal<int>(game.get_state().get_player(player::scientist).hand.contents.size(), 4);
+  for (int i = 0; i < 4; i++) {
+    assert_equal<std::string>(game.get_state().get_player(player::scientist).hand.contents[i].name, to_discard[i]);
   }
 }
 
 TEST(cure_as_scientist_requires_research_facility) {
-  Game game;
-  game.setup();
-  game.add_role(player::scientist);
-  // Move the scientist away from the starting location.
-  game.drive(player::scientist, game.get_state().cities[CDC_LOCATION].neighbors[0].name);
-  
-  // Suppose that the scientists has all of these cards.
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+
+  // Suppose that the contingency planner has four of these cards.
+  game_state.players.push_back(player::Player(player::scientist));
+  game_state.player_locations[player::scientist] = CDC_LOCATION;
   std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai"};
   for (int i = 0; i < 4; i++) {
-    game.add_card(player::scientist, card::Card(to_discard[i], card::player));
+    game_state.add_card(player::scientist, card::Card(to_discard[i], card::player));
   }
-  std::vector<card::Card> cards_in_hand = game.get_player(player::scientist).hand.contents;
+  Game game{game_state};
   
   bool exception_thrown = false;
   try {
@@ -958,54 +905,40 @@ TEST(cure_as_scientist_requires_research_facility) {
   }
 
   assert_true(exception_thrown, "Attempting to cure without a research facility should be illegal.");
-  // The scientist's hand shouldn't be different after a failure.
-  card::Hand hand_after_failure = game.get_player(player::scientist).hand;
-  assert_equal<int>(hand_after_failure.contents.size(), cards_in_hand.size());
-  for (int i = 0; i < cards_in_hand.size(); i++) {
-    assert_equal<std::string>(hand_after_failure.contents[i].name, cards_in_hand[i].name);
+  // The player's hand shouldn't be different after a failure.
+  assert_equal<int>(game.get_state().get_player(player::scientist).hand.contents.size(), 4);
+  for (int i = 0; i < 4; i++) {
+    assert_equal<std::string>(game.get_state().get_player(player::scientist).hand.contents[i].name, to_discard[i]);
   }
 }
 
 TEST(cure_as_scientist) {
-  Game game;
-  game.setup();
-  game.add_role(player::scientist);
-  
-  // Suppose that the scientist has all of these cards.
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+  game_state.board[CDC_LOCATION].research_facility = true;
+
+  // Suppose that the contingency planner has four of these cards.
+  game_state.players.push_back(player::Player(player::scientist));
+  game_state.player_locations[player::scientist] = CDC_LOCATION;
   std::string to_discard[] {"Algeirs", "Baghdad", "Cairo", "Chennai"};
   for (int i = 0; i < 4; i++) {
-    game.add_card(player::scientist, card::Card(to_discard[i], card::player));
+    game_state.add_card(player::scientist, card::Card(to_discard[i], card::player));
   }
-  std::vector<card::Card> cards_in_hand = game.get_player(player::scientist).hand.contents;
+  Game game{game_state};
   
   // Cure the disease
   game.scientist_cure(to_discard);
 
   // The scientist's hand should have discarded the cards.
-  assert_equal<int>(game.get_player(player::scientist).hand.contents.size(), cards_in_hand.size() - 4);
-  bool discarded;
-  for (int i = 0; i < cards_in_hand.size(); i++) {
-    discarded = false;
-    for (int j = 0; j < 4; j++) {
-      if (cards_in_hand[i].name == to_discard[j]) {
-        discarded = true;
-        std::string message = "The scientist's hand shouldn't contain " + to_discard[j];
-        assert_false(card::contains(game.get_player(player::scientist).hand, to_discard[j]), message.c_str());
-        break;
-      }
-    }
-    if (!discarded) {
-      std::string message = "The scientist's hand should still contain " + cards_in_hand[i].name;
-      assert_true(card::contains(game.get_player(player::scientist).hand, cards_in_hand[i].name), message.c_str());
-    }
-  }
+  assert_equal<int>(game.get_state().get_player(player::scientist).hand.contents.size(), 0);
   assert_true(game.get_state().diseases[disease::black].cured, "The disease should be cured.");
 }
 TEST(reclaim_requires_event_type) {
-  Game game;
-  game.setup();
-  game.add_role(player::contingency_planner);
-  game.discard(card::Card(CDC_LOCATION, card::player));
+  GameState game_state{};
+  game_state.players.push_back(player::Player(player::contingency_planner));
+  game_state.player_locations[player::contingency_planner] = CDC_LOCATION;
+  game_state.player_deck.discard(card::Card(CDC_LOCATION, card::player));
+  Game game{game_state};
   
   bool exception_thrown = false;
   try {
@@ -1017,9 +950,10 @@ TEST(reclaim_requires_event_type) {
   assert_true(exception_thrown, "City cards should not be re-claimable.");
 }
 TEST(reclaim_requires_card_in_discard) {
-  Game game;
-  game.setup();
-  game.add_role(player::contingency_planner);
+  GameState game_state{};
+  game_state.players.push_back(player::Player(player::contingency_planner));
+  game_state.player_locations[player::contingency_planner] = CDC_LOCATION;
+  Game game{game_state};
   
   bool exception_thrown = false;
   try {
@@ -1031,10 +965,11 @@ TEST(reclaim_requires_card_in_discard) {
   assert_true(exception_thrown, "Only discarded cards may be re-claimed.");
 }
 TEST(reclaim) {
-  Game game;
-  game.setup();
-  game.add_role(player::contingency_planner);
-  game.discard(card::Card(ONE_QUIET_NIGHT, card::player, card::one_quiet_night));
+  GameState game_state{};
+  game_state.players.push_back(player::Player(player::contingency_planner));
+  game_state.player_locations[player::contingency_planner] = CDC_LOCATION;
+  game_state.player_deck.discard(card::Card(ONE_QUIET_NIGHT, card::player, card::one_quiet_night));
+  Game game{game_state};
 
   assert_false(card::contains(game.get_state().contingency_card, ONE_QUIET_NIGHT), "The event card should not be on the contingency planner card initially.");
   assert_equal<int>(game.get_state().player_deck.get_discard_contents().size(), 1);
@@ -1045,11 +980,12 @@ TEST(reclaim) {
   assert_equal<int>(game.get_state().player_deck.get_discard_contents().size(), 0);
 }
 TEST(reclaim_limited_to_one) {
-  Game game;
-  game.setup();
-  game.add_role(player::contingency_planner);
-  game.discard(card::Card(ONE_QUIET_NIGHT, card::player, card::one_quiet_night));
-  game.discard(card::Card(RESILIENT_POPULATION, card::player, card::resilient_population));
+  GameState game_state{};
+  game_state.players.push_back(player::Player(player::contingency_planner));
+  game_state.player_locations[player::contingency_planner] = CDC_LOCATION;
+  game_state.player_deck.discard(card::Card(ONE_QUIET_NIGHT, card::player, card::one_quiet_night));
+  game_state.player_deck.discard(card::Card(RESILIENT_POPULATION, card::player, card::resilient_population));
+  Game game{game_state};
 
   assert_equal<int>(game.get_state().player_deck.get_discard_contents().size(), 2);
 
@@ -1064,10 +1000,9 @@ TEST(reclaim_limited_to_one) {
   assert_equal<int>(game.get_state().player_deck.get_discard_contents().size(), 0);
 }
 TEST(reclaim_requires_contingency_planner) {
-  Game game;
-  game.setup();
-  game.remove_role(player::contingency_planner);
-  game.discard(card::Card(ONE_QUIET_NIGHT, card::player, card::one_quiet_night));
+  GameState game_state{};
+  game_state.player_deck.discard(card::Card(ONE_QUIET_NIGHT, card::player, card::one_quiet_night));
+  Game game{game_state};
   
   bool exception_thrown = false;
   try {
@@ -1080,9 +1015,12 @@ TEST(reclaim_requires_contingency_planner) {
 }
 
 TEST(company_plane_requires_operations_expert) {
-  Game game;
-  game.setup();
-  game.remove_role(player::operations_expert);
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+
+  game_state.board[CDC_LOCATION].research_facility = true;
+
+  Game game{game_state};
   
   bool exception_thrown = false;
   try {
@@ -1095,13 +1033,16 @@ TEST(company_plane_requires_operations_expert) {
 }
 
 TEST(company_plane_requires_discarded_card) {
-  Game game;
-  game.setup();
-  game.add_role(player::operations_expert);
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+
+  game_state.board[CDC_LOCATION].research_facility = true;
+
+  game_state.players.push_back(player::Player(player::operations_expert));
+  game_state.player_locations[player::operations_expert] = CDC_LOCATION;
+  Game game{game_state};
+
   std::string to_discard = "Madrid";
-  try {
-  game.remove_player_card(player::operations_expert, to_discard);
-  } catch(std::invalid_argument) {} // Ignore exception if card is missing.
   
   bool exception_thrown = false;
   try {
@@ -1114,13 +1055,14 @@ TEST(company_plane_requires_discarded_card) {
 }
 
 TEST(company_plane_requires_research_facility) {
-  Game game;
-  game.setup();
-  game.add_role(player::operations_expert);
-  std::string to_discard = "Madrid";
-  game.add_card(player::operations_expert, card::Card(to_discard, card::player));
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
 
-  game.drive(player::operations_expert, game.get_state().cities[CDC_LOCATION].neighbors[0].name);
+  game_state.players.push_back(player::Player(player::operations_expert));
+  game_state.player_locations[player::operations_expert] = CDC_LOCATION;
+  std::string to_discard = "Madrid";
+  game_state.add_card(player::operations_expert, card::Card(to_discard, card::player));
+  Game game{game_state};
   
   bool exception_thrown = false;
   try {
@@ -1133,43 +1075,62 @@ TEST(company_plane_requires_research_facility) {
 }
 
 TEST(company_plane) {
-  Game game;
-  game.setup();
-  game.add_role(player::operations_expert);
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+
+  game_state.board[CDC_LOCATION].research_facility = true;
+
+  game_state.players.push_back(player::Player(player::operations_expert));
+  game_state.player_locations[player::operations_expert] = CDC_LOCATION;
   std::string destination = "Istanbul", to_discard = "Madrid";
-  game.add_card(player::operations_expert, card::Card(to_discard, card::player));
+  game_state.add_card(player::operations_expert, card::Card(to_discard, card::player));
+  Game game{game_state};
   
   // Take the company plane
   game.company_plane(destination, to_discard);
 
-  assert_false(card::contains(game.get_player(player::operations_expert).hand, to_discard), "The discarded card should be removed from the Operations Expert's hand.");
+  assert_false(card::contains(game.get_state().get_player(player::operations_expert).hand, to_discard), "The discarded card should be removed from the Operations Expert's hand.");
   assert_equal(game.get_state().player_deck.get_discard_contents().back().name, to_discard);
   assert_equal(game.get_state().player_locations[player::operations_expert], destination);
 }
 
 TEST(epidemic) {
-  Game game;
-  game.setup();
-  game.remove_role(player::quarantine_specialist); // This role may prevent disease placement. Remove it for testing.
+  GameState game_state{};
+  gerryfudd::data::city::load_cities(&game_state.cities);
+
+  card::Card bottom_card = card::Card(CDC_LOCATION, card::infect);
+  disease::DiseaseColor color = disease::blue;
+  game_state.infection_deck.insert(bottom_card, 0);
+  game_state.infection_deck.insert(card::Card("Istanbul", card::infect), 0);
+
+  game_state.infection_deck.discard(card::Card("Algeirs", card::infect));
+  game_state.infection_deck.discard(card::Card("Baghdad", card::infect));
+  game_state.infection_deck.discard(card::Card("Cairo", card::infect));
+  game_state.infection_deck.discard(card::Card("Chennai", card::infect));
+  std::vector<card::Card> infection_discard_before = game_state.infection_deck.get_discard_contents();
+  for (int i = 0; i < 4; i++) {
+    game_state.board[infection_discard_before[i].name].disease_count[disease::black] = 1;
+  }
+  game_state.diseases[disease::black].reserve = DISEASE_RESERVE - 4;
+  game_state.diseases[disease::blue].reserve = DISEASE_RESERVE;
+
+  Game game{game_state};
 
   GameState game_state_before = game.get_state();
 
-  card::Card bottom_card = game_state_before.infection_deck.reveal(-1);
-  std::vector<card::Card> infection_discard_before = game_state_before.infection_deck.get_discard_contents();
-  disease::DiseaseColor color = game_state_before.cities[bottom_card.name].color;
 
-  assert_equal(game_state_before.board[bottom_card.name].disease_count[color], 0);
+  assert_equal(game_state_before.board[CDC_LOCATION].disease_count[color], 0);
   assert_equal(game_state_before.infection_rate_level, 0);
 
 
-  assert_equal<int>(infection_discard_before.size(), 9);
-  assert_equal<int>(game_state_before.infection_deck.remaining(), game_state_before.cities.size() - 9);
+  assert_equal<int>(infection_discard_before.size(), 4);
+  assert_equal<int>(game_state_before.infection_deck.remaining(), 2);
 
   assert_false(game.epidemic(), "The first epidemic of the game shouldn't result in a loss.");
 
   GameState game_state_after = game.get_state();
-  assert_equal(game_state_after.board[bottom_card.name].disease_count[color], 3);
-  assert_equal(game_state_after.diseases[color].reserve, game_state_before.diseases[color].reserve - 3);
+  assert_equal(game_state_after.board[CDC_LOCATION].disease_count[color], 3);
+  assert_equal(game_state_after.diseases[color].reserve, DISEASE_RESERVE - 3);
   assert_equal(game_state_after.infection_rate_level, 1);
 
   assert_equal<int>(game_state_after.infection_deck.get_discard_contents().size(), 0);
@@ -1179,13 +1140,73 @@ TEST(epidemic) {
       return lhs.name < rhs.name;
     }
   };
-  std::set<card::Card, CardCompare> expected_top_ten(infection_discard_before.begin(), infection_discard_before.end());
-  expected_top_ten.insert(bottom_card);
-  assert_equal<int>(game_state_after.infection_deck.remaining(), game_state_after.cities.size());
+  std::set<card::Card, CardCompare> expected_top_five(infection_discard_before.begin(), infection_discard_before.end());
+  expected_top_five.insert(bottom_card);
+  assert_equal<int>(game_state_after.infection_deck.remaining(), 6);
   std::set<card::Card>::iterator cursor;
-  for (int i = 0; i < 10; i++) {
-    cursor = expected_top_ten.find(game_state_after.infection_deck.reveal(i));
-    assert_false(cursor == expected_top_ten.end(), "All of the top ten infection cards should come from the discard.");
-    expected_top_ten.erase(cursor);
+  for (int i = 0; i < 5; i++) {
+    cursor = expected_top_five.find(game_state_after.infection_deck.reveal(i));
+    assert_false(cursor == expected_top_five.end(), "All of the top five infection cards should come from the discard.");
+    expected_top_five.erase(cursor);
   }
+}
+
+TEST(get_player_choice_one_quiet_night) {
+  GameState game_state{};
+
+  gerryfudd::data::city::load_cities(&game_state.cities);
+
+  game_state.players.push_back(player::Player(player::contingency_planner));
+  game_state.player_locations[player::contingency_planner] = CDC_LOCATION;
+  game_state.players.back().hand.contents.push_back(card::Card(CDC_LOCATION, card::player));
+
+  game_state.players.push_back(player::Player(player::dispatcher));
+  game_state.player_locations[player::dispatcher] = CDC_LOCATION;
+  game_state.players.back().hand.contents.push_back(card::Card(ONE_QUIET_NIGHT, card::player, card::one_quiet_night));
+
+  TurnState turn_state{player::contingency_planner, game_state.get_infection_rate()};
+
+  std::vector<PlayerChoice> cp_choices = get_player_choices(player::contingency_planner, game_state, turn_state);
+  assert_equal<int>(cp_choices.size(), 0);
+
+  std::vector<PlayerChoice> disp_choices = get_player_choices(player::dispatcher, game_state, turn_state);
+  assert_equal<int>(disp_choices.size(), 1);
+  std::string expected_propmpt = "Play ";
+  expected_propmpt += ONE_QUIET_NIGHT;
+  expected_propmpt += " to skip the next infect step.";
+  assert_equal<std::string>(disp_choices[0].prompt, expected_propmpt);
+}
+
+TEST(get_player_choice_resilient_population) {
+  GameState game_state{};
+
+  gerryfudd::data::city::load_cities(&game_state.cities);
+
+  game_state.infection_deck.discard(card::Card(CDC_LOCATION, card::infect));
+  game_state.infection_deck.discard(card::Card("Istanbul", card::infect));
+
+// quarantine_specialist, scientist, researcher
+  game_state.players.push_back(player::Player(player::medic));
+  game_state.player_locations[player::medic] = CDC_LOCATION;
+  game_state.players.push_back(player::Player(player::operations_expert));
+  game_state.player_locations[player::operations_expert] = CDC_LOCATION;
+  game_state.players.back().hand.contents.push_back(card::Card(RESILIENT_POPULATION, card::player, card::resilient_population));
+
+  TurnState turn_state{player::medic, game_state.get_infection_rate()};
+
+  std::vector<PlayerChoice> cp_choices = get_player_choices(player::medic, game_state, turn_state);
+  assert_equal<int>(cp_choices.size(), 0);
+
+  std::vector<PlayerChoice> disp_choices = get_player_choices(player::operations_expert, game_state, turn_state);
+  assert_equal<int>(disp_choices.size(), 2);
+  std::string expected_propmpt = "Play ";
+  expected_propmpt += RESILIENT_POPULATION;
+  expected_propmpt += " to remove ";
+  expected_propmpt += CDC_LOCATION;
+  expected_propmpt += " from the infection discard.";
+  assert_equal<std::string>(disp_choices[0].prompt, expected_propmpt);
+  expected_propmpt = "Play ";
+  expected_propmpt += RESILIENT_POPULATION;
+  expected_propmpt += " to remove Istanbul from the infection discard.";
+  assert_equal<std::string>(disp_choices[1].prompt, expected_propmpt);
 }

@@ -8,14 +8,99 @@
 namespace gerryfudd::core {
   int Game::infection_rate_escalation[] = INFECTION_RATE_ESCALATION;
   int Game::hand_sizes[] = HAND_SIZES;
+
   GameState::GameState(): infection_deck{card::infect}, player_deck{card::player}, contingency_card{card::player}, outbreaks{0}, infection_rate_level{0}, research_facility_reserve{RESEARCH_FACILITY_COUNT} {}
   int GameState::get_infection_rate() {
     return Game::infection_rate_escalation[infection_rate_level];
   }
+  player::Player GameState::get_player(player::Role role) {
+    for (std::vector<player::Player>::iterator cursor = players.begin(); cursor != players.end(); cursor++) {
+      if (cursor->role == role) {
+        return *cursor;
+      }
+    }
+    throw std::invalid_argument("There is no player with this role.");
+  }
+  void GameState::add_card(player::Role role, card::Card card) {
+    for (std::vector<player::Player>::iterator cursor = players.begin(); cursor != players.end(); cursor++) {
+      if (cursor->role == role) {
+        cursor->hand.contents.push_back(card);
+        return;
+      }
+    }
+    throw std::invalid_argument("There is no player with this role.");
+  }
+  bool GameState::prevent_placement(std::string location, disease::DiseaseColor color) {
+    if (player_locations[player::quarantine_specialist] == location) {
+      return true;
+    }
+    if (diseases[color].cured && player_locations[player::medic] == location) {
+      return true;
+    }
+
+    for (std::vector<city::City>::iterator cursor = cities[location].neighbors.begin(); cursor != cities[location].neighbors.end(); cursor++) {
+      if (cursor->name == player_locations[player::quarantine_specialist]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  GameState initialize_state(Difficulty difficulty, int player_count) {
+    GameState result{};
+
+    data::city::load_cities(&result.cities);
+    for (std::map<std::string, city::City>::iterator cursor = result.cities.begin(); cursor != result.cities.end(); ++cursor) {
+      result.board[cursor->first] = city::CityState();
+      result.infection_deck.discard(card::Card(cursor->first, card::infect));
+      result.player_deck.discard(card::Card(cursor->first, card::player));
+    }
+    result.research_facility_reserve--;
+    result.board[CDC_LOCATION].research_facility = true;
+
+    result.infection_deck.shuffle();
+
+    std::string last_city_drawn;
+    for (int i = 3; i < 12; i++) {
+      last_city_drawn = result.infection_deck.draw_and_discard().name;
+      result.board[last_city_drawn].disease_count[result.cities[last_city_drawn].color] += i / 3;
+      result.diseases[result.cities[last_city_drawn].color].reserve -= i / 3;
+    }
+    
+    result.player_deck.discard(card::Card(ONE_QUIET_NIGHT, card::player));
+    result.player_deck.discard(card::Card(RESILIENT_POPULATION, card::player));
+    result.player_deck.discard(card::Card(GOVERNMENT_GRANT, card::player));
+    result.player_deck.discard(card::Card(AIRLIFT, card::player));
+
+    result.player_deck.shuffle();
+    int initial_hand_size = Game::hand_sizes[player_count - MIN_PLAYER_COUNT];
+    std::vector<player::Role> roles = player::get_roles(player_count);
+    for (std::vector<player::Role>::iterator cursor = roles.begin(); cursor != roles.end(); cursor++) {
+      result.players.push_back(player::Player(*cursor));
+      while (result.players.back().hand.contents.size() < initial_hand_size) {
+        result.players.back().hand.contents.push_back(result.player_deck.draw());
+      }
+      result.player_locations[*cursor] = CDC_LOCATION;
+    }
+    int epidemics = BASE_EPIDEMIC_COUNT + difficulty;
+    int cards_per_epidemic = (result.player_deck.remaining() + epidemics) / epidemics;
+    for (int i = 0; i < epidemics; i++) {
+      result.player_deck.insert(card::Card(EPIDEMIC, card::player, card::epidemic), cards_per_epidemic * i);
+      result.player_deck.shuffle(cards_per_epidemic * i, std::min(cards_per_epidemic * (i+1), result.player_deck.remaining()));
+    }
+    return result;
+  }
+  GameState initialize_state() {
+    return initialize_state(easy, 2);
+  }
+
+  TurnState::TurnState(player::Role active_role, int infection_rate): active_role{active_role}, event_cards_played{false}, remaining_actions{4}, remaining_player_card_draws{2}, remaining_infection_card_draws{infection_rate} {}
+
   Game::Game() {}
+  Game::Game(GameState game_state): state{game_state} {}
 
   int Game::place(std::string target, disease::DiseaseColor color, int quantity) {
-    if (state.board[target].prevent_placement(color)) {
+    if (state.prevent_placement(target, color)) {
       return 0;
     }
     state.diseases[color].reserve -= quantity;
@@ -27,173 +112,30 @@ namespace gerryfudd::core {
     return place(target, state.cities[target].color, quantity);
   }
 
-  void Game::setup() {
-    setup(easy, MIN_PLAYER_COUNT);
-  }
-
-  void Game::setup(Difficulty difficulty, int player_count) {
-    state = GameState();
-
-    data::city::load_cities(&state.cities);
-    for (std::map<std::string, city::City>::iterator cursor = state.cities.begin(); cursor != state.cities.end(); ++cursor) {
-      state.board[cursor->first] = city::CityState();
-      state.infection_deck.discard(card::Card(cursor->first, card::infect));
-      state.player_deck.discard(card::Card(cursor->first, card::player));
-    }
-    place_research_facility(CDC_LOCATION);
-
-    state.infection_deck.shuffle();
-
-    place(state.infection_deck.draw_and_discard().name, 1);
-    place(state.infection_deck.draw_and_discard().name, 1);
-    place(state.infection_deck.draw_and_discard().name, 1);
-
-    place(state.infection_deck.draw_and_discard().name, 2);
-    place(state.infection_deck.draw_and_discard().name, 2);
-    place(state.infection_deck.draw_and_discard().name, 2);
-
-    place(state.infection_deck.draw_and_discard().name, 3);
-    place(state.infection_deck.draw_and_discard().name, 3);
-    place(state.infection_deck.draw_and_discard().name, 3);
-    
-    state.player_deck.discard(card::Card(ONE_QUIET_NIGHT, card::player));
-    state.player_deck.discard(card::Card(RESILIENT_POPULATION, card::player));
-    state.player_deck.discard(card::Card(GOVERNMENT_GRANT, card::player));
-    state.player_deck.discard(card::Card(AIRLIFT, card::player));
-
-    state.player_deck.shuffle();
-    int initial_hand_size = hand_sizes[player_count - MIN_PLAYER_COUNT];
-    std::vector<player::Role> roles = player::get_roles(player_count);
-    for (std::vector<player::Role>::iterator cursor = roles.begin(); cursor != roles.end(); cursor++) {
-      state.players.push_back(player::Player(*cursor));
-      while (state.players.back().hand.contents.size() < initial_hand_size) {
-        state.players.back().hand.contents.push_back(state.player_deck.draw());
-      }
-      place_player(*cursor, CDC_LOCATION);
-    }
-    int epidemics = BASE_EPIDEMIC_COUNT + difficulty;
-    int cards_per_epidemic = (state.player_deck.remaining() + epidemics) / epidemics;
-    for (int i = 0; i < epidemics; i++) {
-      state.player_deck.insert(card::Card(EPIDEMIC, card::player, card::epidemic), cards_per_epidemic * i);
-      state.player_deck.shuffle(cards_per_epidemic * i, std::min(cards_per_epidemic * (i+1), state.player_deck.remaining()));
-    }
-  }
-
-  void Game::update_protections(std::string location) {
-    state.board[location].protected_colors.resize(0);
-    if (state.player_locations[player::quarantine_specialist] == location) {
-      state.board[location].protected_colors.push_back(disease::black);
-      state.board[location].protected_colors.push_back(disease::blue);
-      state.board[location].protected_colors.push_back(disease::red);
-      state.board[location].protected_colors.push_back(disease::yellow);
-
-      for (std::vector<city::City>::iterator cursor = state.cities[location].neighbors.begin(); cursor != state.cities[location].neighbors.end(); cursor++) {
-        state.board[cursor->name].protected_colors.resize(0);
-        state.board[cursor->name].protected_colors.push_back(disease::black);
-        state.board[cursor->name].protected_colors.push_back(disease::blue);
-        state.board[cursor->name].protected_colors.push_back(disease::red);
-        state.board[cursor->name].protected_colors.push_back(disease::yellow);
-      }
-    } else if (state.player_locations[player::medic] == location) {
-      if (state.diseases[disease::black].cured) {
-        state.board[location].protected_colors.push_back(disease::black);
-      }
-      if (state.diseases[disease::blue].cured) {
-        state.board[location].protected_colors.push_back(disease::blue);
-      }
-      if (state.diseases[disease::red].cured) {
-        state.board[location].protected_colors.push_back(disease::red);
-      }
-      if (state.diseases[disease::yellow].cured) {
-        state.board[location].protected_colors.push_back(disease::yellow);
-      }
-    }
-  }
-
-  void Game::remove_player_with_role(player::Role role) {
-    std::string player_location = state.player_locations[role];
-
-    state.player_locations.erase(state.player_locations.find(role));
-
-    update_protections(player_location);
-    if (role == player::quarantine_specialist) {
-      for (std::vector<city::City>::iterator cursor = state.cities[player_location].neighbors.begin(); cursor != state.cities[player_location].neighbors.end(); cursor++) {
-        update_protections(cursor->name);
-      }
-    }
-  }
-  void Game::place_player(player::Role role, std::string destination) {
-    state.player_locations[role] = destination;
-    update_protections(destination);
-  }
-  void Game::move(player::Role role, std::string destination) {
-    remove_player_with_role(role);
-    place_player(role, destination);
-  }
-  void Game::add_role(player::Role role) {
-    for (std::vector<player::Player>::iterator cursor = state.players.begin(); cursor != state.players.end(); cursor++) {
-      if (cursor->role == role) {
-        return;
-      }
-    }
-    player::Role role_to_replace = state.players.back().role;
-    card::Hand hand = state.players.back().hand;
-    remove_player_with_role(role_to_replace);
-    state.players.pop_back();
-    state.players.push_back(player::Player(role));
-    state.players.back().hand = hand;
-    place_player(role, CDC_LOCATION);
-  }
-  void Game::remove_role(player::Role role) {
-    std::vector<player::Role> unused_roles;
-    unused_roles.push_back(player::contingency_planner);
-    unused_roles.push_back(player::dispatcher);
-    unused_roles.push_back(player::medic); 
-    unused_roles.push_back(player::operations_expert); 
-    unused_roles.push_back(player::quarantine_specialist); 
-    unused_roles.push_back(player::scientist); 
-    unused_roles.push_back(player::researcher);
-    std::vector<player::Player>::iterator to_replace = state.players.end();
-    for (std::vector<player::Player>::iterator cursor = state.players.begin(); cursor != state.players.end(); cursor++) {
-      unused_roles.erase(std::find(unused_roles.begin(), unused_roles.end(), cursor->role));
-      if (cursor->role == role) {
-        to_replace = cursor;
-      }
-    }
-    if (to_replace == state.players.end()) {
-      // There is nothing to do.
-      return;
-    }
-    player::Role role_to_insert = unused_roles.back();
-    card::Hand hand = to_replace->hand;
-    remove_player_with_role(role);
-    state.players.erase(to_replace);
-    state.players.push_back(player::Player(role_to_insert));
-    state.players.back().hand = hand;
-    place_player(role_to_insert, CDC_LOCATION);
-  }
-  void Game::add_card(player::Role role, card::Card card) {
-    for (std::vector<player::Player>::iterator player_cursor = state.players.begin(); player_cursor != state.players.end(); player_cursor++) {
-      if (player_cursor->role == role) {
-        if (card::contains(player_cursor->hand, card.name)) {
-          return;
-        }
-        player_cursor->hand.contents.push_back(card);
-        return;
-      }
-    }
-  }
   GameState Game::get_state() {
     return state;
   }
   void Game::discard(card::Card card) {
     switch (card.deck_type)
     {
+    case card::infect:
+      state.infection_deck.discard(card);
+      break;
     case card::player:
       state.player_deck.discard(card);
       break;
+    default:
+      throw std::invalid_argument("");
+    }
+  } 
+  void Game::remove_from_discard(card::Card card) {
+    switch (card.deck_type)
+    {
+    case card::player:
+      state.player_deck.remove_from_discard(card.name);
+      break;
     case card::infect:
-      state.infection_deck.discard(card);
+      state.infection_deck.remove_from_discard(card.name);
       break;
     default:
       throw std::invalid_argument("");
@@ -210,19 +152,8 @@ namespace gerryfudd::core {
     state.board[source_city_name].research_facility = false;
   }
 
-  int Game::get_player_count() {
-    return state.players.size();
-  }
-  player::Player Game::get_player(player::Role role) {
-    for (std::vector<player::Player>::iterator cursor = state.players.begin(); cursor != state.players.end(); cursor++) {
-      if (cursor->role == role) {
-        return *cursor;
-      }
-    }
-    throw std::invalid_argument("There is no player with this role");
-  }
   bool Game::place_disease(std::string city_name, disease::DiseaseColor color, std::vector<std::string>& executed_outbreaks) {
-    if (state.board[city_name].prevent_placement(color)) {
+    if (state.prevent_placement(city_name, color)) {
       return false;
     }
     if (state.diseases[color].reserve <= 0) {
@@ -278,7 +209,7 @@ namespace gerryfudd::core {
     std::string origin = state.player_locations[role];
     for (std::vector<city::City>::iterator cursor = state.cities[origin].neighbors.begin(); cursor != state.cities[origin].neighbors.end(); cursor++) {
       if (cursor->name == destination) {
-        move(role, destination);
+        state.player_locations[role] = destination;
         return;
       }
     }
@@ -287,30 +218,30 @@ namespace gerryfudd::core {
 
   void Game::direct_flight(player::Role role, std::string destination) {
     state.player_deck.discard(remove_player_card(role, destination));
-    move(role, destination);
+    state.player_locations[role] = destination;
   }
 
   void Game::charter_flight(player::Role role, std::string destination) {
     state.player_deck.discard(remove_player_card(role, state.player_locations[role]));
-    move(role, destination);
+    state.player_locations[role] = destination;
   }
   void Game::shuttle(player::Role role, std::string destination) {
     if (!state.board[state.player_locations[role]].research_facility || !state.board[destination].research_facility) {
       throw std::invalid_argument("You may only shuttle between research facilities.");
     }
-    move(role, destination);
+    state.player_locations[role] = destination;
   }
 
   void Game::dispatcher_direct_flight(player::Role role, std::string destination) {
     state.player_deck.discard(remove_player_card(player::dispatcher, destination));
-    move(role, destination);
+    state.player_locations[role] = destination;
   }
   void Game::dispatcher_charter_flight(player::Role role, std::string destination) {
     state.player_deck.discard(remove_player_card(player::dispatcher, state.player_locations[role]));
-    move(role, destination);
+    state.player_locations[role] = destination;
   }
   void Game::dispatcher_conference(player::Role guest, player::Role host) {
-    move(guest, state.player_locations[host]);
+    state.player_locations[guest] = state.player_locations[host];
   }
 
   void Game::treat(player::Role role, disease::DiseaseColor color) {
@@ -326,13 +257,13 @@ namespace gerryfudd::core {
     if (state.player_locations[source] != state.player_locations[target]) {
       throw std::invalid_argument("Players must be in the same city to share cards.");
     }
-    add_card(target, remove_player_card(source, state.player_locations[source]));
+    state.add_card(target, remove_player_card(source, state.player_locations[source]));
   }
   void Game::researcher_share(std::string card_name, player::Role target) {
     if (state.player_locations[player::researcher] != state.player_locations[target]) {
       throw std::invalid_argument("Players must be in the same city to share cards.");
     }
-    add_card(target, remove_player_card(player::researcher, card_name));
+    state.add_card(target, remove_player_card(player::researcher, card_name));
   }
   void Game::cure(player::Role role, std::string matching_cards[5]) {
     if (!state.board[state.player_locations[role]].research_facility) {
@@ -346,7 +277,7 @@ namespace gerryfudd::core {
       } else if (disease_to_cure != state.cities[matching_cards[i]].color) {
         throw std::invalid_argument("Curing a disease requires that all discarded cards share a color.");
       }
-      if (!card::contains(get_player(role).hand, matching_cards[i])) {
+      if (!card::contains(state.get_player(role).hand, matching_cards[i])) {
         throw std::invalid_argument("This player doesn't have this card.");
       }
     }
@@ -367,7 +298,7 @@ namespace gerryfudd::core {
       } else if (disease_to_cure != state.cities[matching_cards[i]].color) {
         throw std::invalid_argument("Curing a disease requires that all discarded cards share a color.");
       }
-      if (!card::contains(get_player(player::scientist).hand, matching_cards[i])) {
+      if (!card::contains(state.get_player(player::scientist).hand, matching_cards[i])) {
         throw std::invalid_argument("This player doesn't have this card.");
       }
     }
@@ -394,11 +325,11 @@ namespace gerryfudd::core {
     } else if (!state.board[state.player_locations[player::operations_expert]].research_facility) {
       throw std::invalid_argument("Company plane requires the Operations Expert to be in a city with a research facility.");
     }
-    if (!card::contains(get_player(player::operations_expert).hand, to_discard)) {
+    if (!card::contains(state.get_player(player::operations_expert).hand, to_discard)) {
       throw std::invalid_argument("This player does not have this card.");
     }
     state.player_deck.discard(remove_player_card(player::operations_expert, to_discard));
-    move(player::operations_expert, destination);
+    state.player_locations[player::operations_expert] = destination;
   }
 
   bool Game::epidemic() {
@@ -413,7 +344,68 @@ namespace gerryfudd::core {
     if (state.player_deck.size() == 0) {
       return true;
     }
-    get_player(role).hand.contents.push_back(state.player_deck.draw());
+    state.get_player(role).hand.contents.push_back(state.player_deck.draw());
     return false;
+  }
+
+  PlayerChoice create_one_quiet_night(player::Role role) {
+    PlayerChoice choice;
+    choice.prompt = "Play ";
+    choice.prompt += ONE_QUIET_NIGHT;
+    choice.prompt += " to skip the next infect step.";
+    choice.effect = [&](Game game, TurnState turn_state) -> bool {
+      game.discard(game.remove_player_card(role, ONE_QUIET_NIGHT));
+      turn_state.remaining_infection_card_draws = 0;
+      return false;
+    };
+    return choice;
+  }
+
+  PlayerChoice create_resilient_population(player::Role role, card::Card card_to_remove) {
+    PlayerChoice choice;
+    choice.prompt = "Play ";
+    choice.prompt += RESILIENT_POPULATION;
+    choice.prompt += " to remove ";
+    choice.prompt += card_to_remove.name;
+    choice.prompt += " from the infection discard.";
+    choice.effect = [&](Game game, TurnState) -> bool {
+      game.discard(game.remove_player_card(role, RESILIENT_POPULATION));
+      game.remove_from_discard(card_to_remove);
+      return false;
+    };
+    return choice;
+  }
+
+  void add_choices_for_card_type(std::vector<PlayerChoice> *player_choices, player::Role role, card::CardType type, GameState game_state) {
+    switch (type)
+    {
+    case card::one_quiet_night:
+      (*player_choices).push_back(create_one_quiet_night(role));
+      break;
+    case card::resilient_population:
+      for (int i = 0; i < game_state.infection_deck.get_discard_contents().size(); i++) {
+        (*player_choices).push_back(create_resilient_population(role, game_state.infection_deck.get_discard_contents()[i]));
+      }
+      break;
+    case card::government_grant:
+      break;
+    case card::airlift:
+      break;
+    default:
+      break;
+    }
+  }
+
+  std::vector<PlayerChoice> get_player_choices(player::Role role, GameState game_state, TurnState turn_state) {
+    if (turn_state.event_cards_played) {
+      return std::vector<PlayerChoice>{};
+    }
+
+    std::vector<PlayerChoice> result;
+    player::Player player = game_state.get_player(role);
+    for (std::vector<card::Card>::iterator cursor = player.hand.contents.begin(); cursor != player.hand.contents.end(); cursor++) {
+      add_choices_for_card_type(&result, role, cursor->type, game_state);
+    }
+    return result;
   }
 }

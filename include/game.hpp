@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <map>
 #include <string>
+#include <functional>
 #include "types/disease.hpp"
 #include "types/city.hpp"
 #include "types/card.hpp"
@@ -36,31 +37,36 @@ namespace gerryfudd::core {
     int research_facility_reserve;
     GameState();
     int get_infection_rate(void);
+    player::Player get_player(player::Role);
+    void add_card(player::Role, card::Card);
+    card::Card remove_card(player::Role, std::string);
+    bool prevent_placement(std::string, disease::DiseaseColor);
+  };
+  GameState initialize_state(Difficulty, int);
+  GameState initialize_state(void); 
+  struct TurnState {
+    player::Role active_role;
+    bool event_cards_played;
+    int remaining_actions;
+    int remaining_player_card_draws;
+    int remaining_infection_card_draws;
+    TurnState(player::Role, int);
   };
   class Game {
     GameState state;
     int place(std::string, disease::DiseaseColor, int);
     int place(std::string, int);
-    void update_protections(std::string);
-    void remove_player_with_role(player::Role);
-    void place_player(player::Role, std::string);
-    void move(player::Role, std::string);
     bool place_disease(std::string, disease::DiseaseColor, std::vector<std::string>&);
   public:
     static int infection_rate_escalation[INFECTION_RATE_SIZE];
     static int hand_sizes[PLAYER_COUNT_OPTIONS];
     Game();
-    void setup(Difficulty, int);
-    void setup();
-    void add_role(player::Role); // For testing
-    void remove_role(player::Role); // For testing
-    void add_card(player::Role, card::Card); // For testing
-    void discard(card::Card); // For testing
+    Game(GameState);
+    void discard(card::Card);
+    void remove_from_discard(card::Card);
     GameState get_state(void);
     void place_research_facility(std::string);
     void place_research_facility(std::string, std::string);
-    int get_player_count(void);
-    player::Player get_player(player::Role);
     card::Card remove_player_card(player::Role, std::string);
     bool draw_infection_card(void);
 
@@ -87,6 +93,13 @@ namespace gerryfudd::core {
 
     bool draw_player_card(player::Role);
   };
+
+  struct PlayerChoice {
+    std::string prompt;
+    std::function<bool(Game&, TurnState&)> effect;
+  };
+
+  std::vector<PlayerChoice> get_player_choices(player::Role, GameState, TurnState);
 }
 
 #endif
