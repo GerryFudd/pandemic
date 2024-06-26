@@ -30,6 +30,21 @@ namespace gerryfudd::core {
     }
     throw std::invalid_argument("There is no player with this role.");
   }
+  card::Card GameState::remove_card(player::Role role, std::string card_name) {
+    for (std::vector<player::Player>::iterator player_cursor = players.begin(); player_cursor != players.end(); player_cursor++) {
+      if (player_cursor->role == role) {
+        for (std::vector<card::Card>::iterator card_cursor = player_cursor->hand.contents.begin(); card_cursor != player_cursor->hand.contents.end(); card_cursor++) {
+          if (card_cursor->name == card_name) {
+            card::Card result = *card_cursor;
+            player_cursor->hand.contents.erase(card_cursor);
+            return result;
+          }
+        }
+        break;
+      }
+    }
+    throw std::invalid_argument("This player doesn't have this card.");
+  }
   bool GameState::prevent_placement(std::string location, disease::DiseaseColor color) {
     if (player_locations[player::quarantine_specialist] == location) {
       return true;
@@ -190,19 +205,7 @@ namespace gerryfudd::core {
     return false;
   }
   card::Card Game::remove_player_card(player::Role role, std::string card_name) {
-    for (std::vector<player::Player>::iterator player_cursor = state.players.begin(); player_cursor != state.players.end(); player_cursor++) {
-      if (player_cursor->role == role) {
-        for (std::vector<card::Card>::iterator card_cursor = player_cursor->hand.contents.begin(); card_cursor != player_cursor->hand.contents.end(); card_cursor++) {
-          if (card_cursor->name == card_name) {
-            card::Card result = *card_cursor;
-            player_cursor->hand.contents.erase(card_cursor);
-            return result;
-          }
-        }
-        break;
-      }
-    }
-    throw std::invalid_argument("This player doesn't have this card.");
+    return state.remove_card(role, card_name);
   }
 
   void Game::drive(player::Role role, std::string destination) {
