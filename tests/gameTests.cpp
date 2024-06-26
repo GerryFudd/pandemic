@@ -1151,7 +1151,7 @@ TEST(epidemic) {
   }
 }
 
-TEST(get_player_choice_one_quiet_night) {
+TEST(get_player_choice_no_event_card) {
   GameState game_state{};
 
   gerryfudd::data::city::load_cities(&game_state.cities);
@@ -1160,21 +1160,28 @@ TEST(get_player_choice_one_quiet_night) {
   game_state.player_locations[player::contingency_planner] = CDC_LOCATION;
   game_state.players.back().hand.contents.push_back(card::Card(CDC_LOCATION, card::player));
 
+  TurnState turn_state{player::contingency_planner, game_state.get_infection_rate()};
+
+  assert_equal<int>(get_player_choices(player::contingency_planner, game_state, turn_state).size(), 0);
+}
+
+TEST(get_player_choice_one_quiet_night) {
+  GameState game_state{};
+
+  gerryfudd::data::city::load_cities(&game_state.cities);
+
   game_state.players.push_back(player::Player(player::dispatcher));
   game_state.player_locations[player::dispatcher] = CDC_LOCATION;
   game_state.players.back().hand.contents.push_back(card::Card(ONE_QUIET_NIGHT, card::player, card::one_quiet_night));
 
   TurnState turn_state{player::contingency_planner, game_state.get_infection_rate()};
 
-  std::vector<PlayerChoice> cp_choices = get_player_choices(player::contingency_planner, game_state, turn_state);
-  assert_equal<int>(cp_choices.size(), 0);
-
-  std::vector<PlayerChoice> disp_choices = get_player_choices(player::dispatcher, game_state, turn_state);
-  assert_equal<int>(disp_choices.size(), 1);
+  std::vector<PlayerChoice> choices = get_player_choices(player::dispatcher, game_state, turn_state);
+  assert_equal<int>(choices.size(), 1);
   std::string expected_propmpt = "Play ";
   expected_propmpt += ONE_QUIET_NIGHT;
   expected_propmpt += " to skip the next infect step.";
-  assert_equal<std::string>(disp_choices[0].prompt, expected_propmpt);
+  assert_equal<std::string>(choices[0].prompt, expected_propmpt);
 }
 
 TEST(get_player_choice_resilient_population) {
@@ -1185,28 +1192,22 @@ TEST(get_player_choice_resilient_population) {
   game_state.infection_deck.discard(card::Card(CDC_LOCATION, card::infect));
   game_state.infection_deck.discard(card::Card("Istanbul", card::infect));
 
-// quarantine_specialist, scientist, researcher
-  game_state.players.push_back(player::Player(player::medic));
-  game_state.player_locations[player::medic] = CDC_LOCATION;
   game_state.players.push_back(player::Player(player::operations_expert));
   game_state.player_locations[player::operations_expert] = CDC_LOCATION;
   game_state.players.back().hand.contents.push_back(card::Card(RESILIENT_POPULATION, card::player, card::resilient_population));
 
   TurnState turn_state{player::medic, game_state.get_infection_rate()};
 
-  std::vector<PlayerChoice> cp_choices = get_player_choices(player::medic, game_state, turn_state);
-  assert_equal<int>(cp_choices.size(), 0);
-
-  std::vector<PlayerChoice> disp_choices = get_player_choices(player::operations_expert, game_state, turn_state);
-  assert_equal<int>(disp_choices.size(), 2);
+  std::vector<PlayerChoice> choices = get_player_choices(player::operations_expert, game_state, turn_state);
+  assert_equal<int>(choices.size(), 2);
   std::string expected_propmpt = "Play ";
   expected_propmpt += RESILIENT_POPULATION;
   expected_propmpt += " to remove ";
   expected_propmpt += CDC_LOCATION;
   expected_propmpt += " from the infection discard.";
-  assert_equal<std::string>(disp_choices[0].prompt, expected_propmpt);
+  assert_equal<std::string>(choices[0].prompt, expected_propmpt);
   expected_propmpt = "Play ";
   expected_propmpt += RESILIENT_POPULATION;
   expected_propmpt += " to remove Istanbul from the infection discard.";
-  assert_equal<std::string>(disp_choices[1].prompt, expected_propmpt);
+  assert_equal<std::string>(choices[1].prompt, expected_propmpt);
 }
