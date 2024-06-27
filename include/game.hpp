@@ -79,6 +79,8 @@ namespace gerryfudd::core {
     void dispatcher_charter_flight(player::Role, std::string);
     void dispatcher_conference(player::Role, player::Role);
 
+    void move(player::Role, std::string);
+
     void treat(player::Role, disease::DiseaseColor);
     void share(player::Role, player::Role);
     void researcher_share(std::string, player::Role);

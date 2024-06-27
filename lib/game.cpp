@@ -244,7 +244,11 @@ namespace gerryfudd::core {
     state.player_locations[role] = destination;
   }
   void Game::dispatcher_conference(player::Role guest, player::Role host) {
+    // FIXME: this should require a dispatcher to be in the game.
     state.player_locations[guest] = state.player_locations[host];
+  }
+  void Game::move(player::Role role, std::string city_name) {
+    state.player_locations[role] = city_name;
   }
 
   void Game::treat(player::Role role, disease::DiseaseColor color) {
@@ -394,6 +398,23 @@ namespace gerryfudd::core {
     return choice;
   }
 
+  PlayerChoice create_airlift(player::Role role, player::Role target_player, std::string target_city) {
+    PlayerChoice choice;
+    choice.prompt = "Play ";
+    choice.prompt += AIRLIFT;
+    choice.prompt += " to move the ";
+    choice.prompt += player::name_of(target_player);
+    choice.prompt += " to ";
+    choice.prompt += target_city;
+    choice.prompt += ".";
+    choice.effect = [role, target_player, target_city](Game &game, TurnState &) -> bool {
+      game.discard(game.remove_player_card(role, AIRLIFT));
+      game.move(target_player, target_city);
+      return false;
+    };
+    return choice;
+  }
+
   void add_choices_for_card_type(std::vector<PlayerChoice> *player_choices, player::Role role, card::CardType type, GameState game_state) {
     switch (type)
     {
@@ -413,6 +434,13 @@ namespace gerryfudd::core {
       }
       break;
     case card::airlift:
+      for (std::vector<player::Player>::iterator player_cursor = game_state.players.begin(); player_cursor != game_state.players.end(); player_cursor++) {
+        for (std::map<std::string, city::City>::iterator city_cursor = game_state.cities.begin(); city_cursor != game_state.cities.end(); city_cursor++) {
+          if (game_state.player_locations[player_cursor->role] != city_cursor->first) {
+            (*player_choices).push_back(create_airlift(role, player_cursor->role, city_cursor->first));
+          }
+        }
+      }
       break;
     default:
       break;

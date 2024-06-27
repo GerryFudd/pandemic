@@ -1273,3 +1273,82 @@ TEST(get_player_choice_government_grant) {
   assert_equal<int>(game.get_state().get_player(player::quarantine_specialist).hand.contents.size(), 0);
   assert_true(game.get_state().board["Chicago"].research_facility, "Chicago should gain a research facility from playing this card.");
 }
+
+TEST(get_player_choice_airlift) {
+  GameState game_state{};
+
+  // Don't populate the full board so we don't end up with a huge number of choices.
+  game_state.cities[CDC_LOCATION] = city::City(CDC_LOCATION, disease::blue, 4715000);
+  game_state.board[CDC_LOCATION] = city::CityState();
+  game_state.cities["Chicago"] = city::City("Chicago", disease::blue, 9121000);
+  game_state.board["Chicago"] = city::CityState();
+  game_state.cities["Miami"] = city::City("Miami", disease::yellow, 5582000);
+  game_state.board["Miami"] = city::CityState();
+  game_state.cities["San Francisco"] = city::City("San Francisco", disease::blue, 5864000);
+  game_state.board["San Francisco"] = city::CityState();
+  attach(&game_state.cities[CDC_LOCATION], &game_state.cities["Chicago"]);
+  attach(&game_state.cities[CDC_LOCATION], &game_state.cities["Miami"]);
+  attach(&game_state.cities["Chicago"], &game_state.cities["San Francisco"]);
+
+  // Start with a research facility at the starting location.
+  game_state.board[CDC_LOCATION].research_facility = true;
+
+  game_state.players.push_back(player::Player(player::scientist));
+  game_state.player_locations[player::scientist] = CDC_LOCATION;
+  game_state.add_card(player::scientist, card::Card(AIRLIFT, card::player, card::airlift));
+  game_state.players.push_back(player::Player(player::researcher));
+  game_state.player_locations[player::researcher] = "San Francisco";
+
+  TurnState turn_state{player::medic, game_state.get_infection_rate()};
+
+  std::vector<PlayerChoice> choices = get_player_choices(player::scientist, game_state, turn_state);
+  assert_equal<int>(choices.size(), 6);
+  std::string expected_propmpt = "Play ";
+  expected_propmpt += AIRLIFT;
+  expected_propmpt += " to move the ";
+  expected_propmpt += SCIENTIST;
+  expected_propmpt += " to Chicago.";
+  assert_equal<std::string>(choices[0].prompt, expected_propmpt);
+
+  expected_propmpt = "Play ";
+  expected_propmpt += AIRLIFT;
+  expected_propmpt += " to move the ";
+  expected_propmpt += SCIENTIST;
+  expected_propmpt += " to Miami.";
+  assert_equal<std::string>(choices[1].prompt, expected_propmpt);
+
+  expected_propmpt = "Play ";
+  expected_propmpt += AIRLIFT;
+  expected_propmpt += " to move the ";
+  expected_propmpt += SCIENTIST;
+  expected_propmpt += " to San Francisco.";
+  assert_equal<std::string>(choices[2].prompt, expected_propmpt);
+
+  expected_propmpt = "Play ";
+  expected_propmpt += AIRLIFT;
+  expected_propmpt += " to move the ";
+  expected_propmpt += RESEARCHER;
+  expected_propmpt += " to ";
+  expected_propmpt += CDC_LOCATION;
+  expected_propmpt += ".";
+  assert_equal<std::string>(choices[3].prompt, expected_propmpt);
+
+  expected_propmpt = "Play ";
+  expected_propmpt += AIRLIFT;
+  expected_propmpt += " to move the ";
+  expected_propmpt += RESEARCHER;
+  expected_propmpt += " to Chicago.";
+  assert_equal<std::string>(choices[4].prompt, expected_propmpt);
+
+  expected_propmpt = "Play ";
+  expected_propmpt += AIRLIFT;
+  expected_propmpt += " to move the ";
+  expected_propmpt += RESEARCHER;
+  expected_propmpt += " to Miami.";
+  assert_equal<std::string>(choices[5].prompt, expected_propmpt);
+
+  Game game{game_state};
+  assert_false(choices[0].effect(game, turn_state), "Playing an event card shouldn't win the game.");
+  assert_equal<int>(game.get_state().get_player(player::scientist).hand.contents.size(), 0);
+  assert_equal<std::string>(game.get_state().player_locations[player::scientist], "Chicago");
+}
