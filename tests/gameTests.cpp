@@ -1172,7 +1172,7 @@ TEST(get_player_choice_one_quiet_night) {
 
   game_state.players.push_back(player::Player(player::dispatcher));
   game_state.player_locations[player::dispatcher] = CDC_LOCATION;
-  game_state.players.back().hand.contents.push_back(card::Card(ONE_QUIET_NIGHT, card::player, card::one_quiet_night));
+  game_state.add_card(player::dispatcher, card::Card(ONE_QUIET_NIGHT, card::player, card::one_quiet_night));
 
   TurnState turn_state{player::contingency_planner, game_state.get_infection_rate()};
 
@@ -1182,6 +1182,11 @@ TEST(get_player_choice_one_quiet_night) {
   expected_propmpt += ONE_QUIET_NIGHT;
   expected_propmpt += " to skip the next infect step.";
   assert_equal<std::string>(choices[0].prompt, expected_propmpt);
+
+  Game game{game_state};
+  assert_false(choices[0].effect(game, turn_state), "Playing an event card shouldn't win the game.");
+  // assert_equal<int>(game.get_state().get_player(player::dispatcher).hand.contents.size(), 0);
+  // assert_equal(turn_state.remaining_infection_card_draws, 0);
 }
 
 TEST(get_player_choice_resilient_population) {
@@ -1198,6 +1203,7 @@ TEST(get_player_choice_resilient_population) {
 
   TurnState turn_state{player::medic, game_state.get_infection_rate()};
 
+  // Confirm the correct prompts.
   std::vector<PlayerChoice> choices = get_player_choices(player::operations_expert, game_state, turn_state);
   assert_equal<int>(choices.size(), 2);
   std::string expected_propmpt = "Play ";
@@ -1206,8 +1212,64 @@ TEST(get_player_choice_resilient_population) {
   expected_propmpt += CDC_LOCATION;
   expected_propmpt += " from the infection discard.";
   assert_equal<std::string>(choices[0].prompt, expected_propmpt);
+
   expected_propmpt = "Play ";
   expected_propmpt += RESILIENT_POPULATION;
   expected_propmpt += " to remove Istanbul from the infection discard.";
   assert_equal<std::string>(choices[1].prompt, expected_propmpt);
+
+  // Perform one of these choices and confirm that it affects the game correctly.
+  Game game{game_state};
+  assert_false(choices[0].effect(game, turn_state), "Playing an event card shouldn't win the game.");
+  assert_equal<int>(game.get_state().get_player(player::operations_expert).hand.contents.size(), 0);
+  assert_equal<int>(game.get_state().infection_deck.get_discard_contents().size(), 1);
+  assert_equal<std::string>(game.get_state().infection_deck.get_discard_contents()[0].name, "Istanbul");
+}
+
+TEST(get_player_choice_government_grant) {
+  GameState game_state{};
+
+  // Don't populate the full board so we don't end up with a huge number of choices.
+  game_state.cities[CDC_LOCATION] = city::City(CDC_LOCATION, disease::blue, 4715000);
+  game_state.board[CDC_LOCATION] = city::CityState();
+  game_state.cities["Chicago"] = city::City("Chicago", disease::blue, 9121000);
+  game_state.board["Chicago"] = city::CityState();
+  game_state.cities["Miami"] = city::City("Miami", disease::yellow, 5582000);
+  game_state.board["Miami"] = city::CityState();
+  game_state.cities["San Francisco"] = city::City("San Francisco", disease::blue, 5864000);
+  game_state.board["San Francisco"] = city::CityState();
+  attach(&game_state.cities[CDC_LOCATION], &game_state.cities["Chicago"]);
+  attach(&game_state.cities[CDC_LOCATION], &game_state.cities["Miami"]);
+  attach(&game_state.cities["Chicago"], &game_state.cities["San Francisco"]);
+
+  // Start with a research facility at the starting location.
+  game_state.board[CDC_LOCATION].research_facility = true;
+
+  game_state.players.push_back(player::Player(player::quarantine_specialist));
+  game_state.player_locations[player::quarantine_specialist] = CDC_LOCATION;
+  game_state.add_card(player::quarantine_specialist, card::Card(GOVERNMENT_GRANT, card::player, card::government_grant));
+
+  TurnState turn_state{player::medic, game_state.get_infection_rate()};
+
+  std::vector<PlayerChoice> choices = get_player_choices(player::quarantine_specialist, game_state, turn_state);
+  assert_equal<int>(choices.size(), 3);
+  std::string expected_propmpt = "Play ";
+  expected_propmpt += GOVERNMENT_GRANT;
+  expected_propmpt += " to place a research facility in Chicago.";
+  assert_equal<std::string>(choices[0].prompt, expected_propmpt);
+
+  expected_propmpt = "Play ";
+  expected_propmpt += GOVERNMENT_GRANT;
+  expected_propmpt += " to place a research facility in Miami.";
+  assert_equal<std::string>(choices[1].prompt, expected_propmpt);
+
+  expected_propmpt = "Play ";
+  expected_propmpt += GOVERNMENT_GRANT;
+  expected_propmpt += " to place a research facility in San Francisco.";
+  assert_equal<std::string>(choices[2].prompt, expected_propmpt);
+
+  Game game{game_state};
+  assert_false(choices[0].effect(game, turn_state), "Playing an event card shouldn't win the game.");
+  assert_equal<int>(game.get_state().get_player(player::quarantine_specialist).hand.contents.size(), 0);
+  assert_true(game.get_state().board["Chicago"].research_facility, "Chicago should gain a research facility from playing this card.");
 }

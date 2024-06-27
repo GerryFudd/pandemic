@@ -40,10 +40,10 @@ namespace gerryfudd::core {
             return result;
           }
         }
-        break;
+        throw std::invalid_argument("This player doesn't have this card.");
       }
     }
-    throw std::invalid_argument("This player doesn't have this card.");
+    throw std::invalid_argument("There is no player with this role.");
   }
   bool GameState::prevent_placement(std::string location, disease::DiseaseColor color) {
     if (player_locations[player::quarantine_specialist] == location) {
@@ -356,7 +356,7 @@ namespace gerryfudd::core {
     choice.prompt = "Play ";
     choice.prompt += ONE_QUIET_NIGHT;
     choice.prompt += " to skip the next infect step.";
-    choice.effect = [&](Game game, TurnState turn_state) -> bool {
+    choice.effect = [role](Game &game, TurnState &turn_state) -> bool {
       game.discard(game.remove_player_card(role, ONE_QUIET_NIGHT));
       turn_state.remaining_infection_card_draws = 0;
       return false;
@@ -371,9 +371,24 @@ namespace gerryfudd::core {
     choice.prompt += " to remove ";
     choice.prompt += card_to_remove.name;
     choice.prompt += " from the infection discard.";
-    choice.effect = [&](Game game, TurnState) -> bool {
+    choice.effect = [role, card_to_remove](Game &game, TurnState &) -> bool {
       game.discard(game.remove_player_card(role, RESILIENT_POPULATION));
       game.remove_from_discard(card_to_remove);
+      return false;
+    };
+    return choice;
+  }
+
+  PlayerChoice create_government_grant(player::Role role, std::string target_city) {
+    PlayerChoice choice;
+    choice.prompt = "Play ";
+    choice.prompt += GOVERNMENT_GRANT;
+    choice.prompt += " to place a research facility in ";
+    choice.prompt += target_city;
+    choice.prompt += ".";
+    choice.effect = [role, target_city](Game &game, TurnState &) -> bool {
+      game.discard(game.remove_player_card(role, GOVERNMENT_GRANT));
+      game.place_research_facility(target_city);
       return false;
     };
     return choice;
@@ -391,6 +406,11 @@ namespace gerryfudd::core {
       }
       break;
     case card::government_grant:
+      for (std::map<std::string, city::CityState>::iterator cursor = game_state.board.begin(); cursor != game_state.board.end(); cursor++) {
+        if (!cursor->second.research_facility) {
+          (*player_choices).push_back(create_government_grant(role, cursor->first));
+        }
+      }
       break;
     case card::airlift:
       break;
