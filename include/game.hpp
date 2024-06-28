@@ -68,6 +68,7 @@ namespace gerryfudd::core {
     void place_research_facility(std::string);
     void place_research_facility(std::string, std::string);
     card::Card remove_player_card(player::Role, std::string);
+    void remove_contingency_card(void);
     bool draw_infection_card(void);
 
     void drive(player::Role, std::string);

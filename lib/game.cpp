@@ -207,6 +207,12 @@ namespace gerryfudd::core {
   card::Card Game::remove_player_card(player::Role role, std::string card_name) {
     return state.remove_card(role, card_name);
   }
+  void Game::remove_contingency_card() {
+    if (state.contingency_card.contents.size() == 0) {
+      throw std::invalid_argument("This is not allowed.");
+    }
+    state.contingency_card.contents.pop_back();
+  }
 
   void Game::drive(player::Role role, std::string destination) {
     std::string origin = state.player_locations[role];
@@ -355,81 +361,94 @@ namespace gerryfudd::core {
     return false;
   }
 
-  PlayerChoice create_one_quiet_night(player::Role role) {
+  void move_card(Game& game, player::Role role, std::string card_name, bool from_contingency_card) {
+      if (from_contingency_card) {
+        game.remove_contingency_card();
+      } else {
+        game.discard(game.remove_player_card(role, card_name));
+      }
+  }
+
+  std::string begin_prompt(std::string card_name, bool from_contingency_card) {
+    std::string result = from_contingency_card ? "Use " : "Play ";
+    result += card_name;
+    if (from_contingency_card) {
+      result += " from your role card";
+    }
+    return result;
+  }
+
+  PlayerChoice create_one_quiet_night(player::Role role, bool from_contingency_card) {
     PlayerChoice choice;
-    choice.prompt = "Play ";
-    choice.prompt += ONE_QUIET_NIGHT;
+    choice.prompt = begin_prompt(ONE_QUIET_NIGHT, from_contingency_card);
     choice.prompt += " to skip the next infect step.";
-    choice.effect = [role](Game &game, TurnState &turn_state) -> bool {
-      game.discard(game.remove_player_card(role, ONE_QUIET_NIGHT));
+    choice.effect = [role, from_contingency_card](Game &game, TurnState &turn_state) -> bool {
+      move_card(game, role, ONE_QUIET_NIGHT, from_contingency_card);
       turn_state.remaining_infection_card_draws = 0;
       return false;
     };
     return choice;
   }
 
-  PlayerChoice create_resilient_population(player::Role role, card::Card card_to_remove) {
+  PlayerChoice create_resilient_population(player::Role role, card::Card card_to_remove, bool from_contingency_card) {
     PlayerChoice choice;
-    choice.prompt = "Play ";
-    choice.prompt += RESILIENT_POPULATION;
+    choice.prompt = begin_prompt(RESILIENT_POPULATION, from_contingency_card);
     choice.prompt += " to remove ";
     choice.prompt += card_to_remove.name;
     choice.prompt += " from the infection discard.";
-    choice.effect = [role, card_to_remove](Game &game, TurnState &) -> bool {
-      game.discard(game.remove_player_card(role, RESILIENT_POPULATION));
+    choice.effect = [role, card_to_remove, from_contingency_card](Game &game, TurnState &) -> bool {
+      move_card(game, role, RESILIENT_POPULATION, from_contingency_card);
       game.remove_from_discard(card_to_remove);
       return false;
     };
     return choice;
   }
 
-  PlayerChoice create_government_grant(player::Role role, std::string target_city) {
+  PlayerChoice create_government_grant(player::Role role, std::string target_city, bool from_contingency_card) {
     PlayerChoice choice;
-    choice.prompt = "Play ";
-    choice.prompt += GOVERNMENT_GRANT;
+    choice.prompt = begin_prompt(GOVERNMENT_GRANT, from_contingency_card);
     choice.prompt += " to place a research facility in ";
     choice.prompt += target_city;
     choice.prompt += ".";
-    choice.effect = [role, target_city](Game &game, TurnState &) -> bool {
-      game.discard(game.remove_player_card(role, GOVERNMENT_GRANT));
+    choice.effect = [role, target_city, from_contingency_card](Game &game, TurnState &) -> bool {
+      move_card(game, role, GOVERNMENT_GRANT, from_contingency_card);
       game.place_research_facility(target_city);
       return false;
     };
     return choice;
   }
 
-  PlayerChoice create_airlift(player::Role role, player::Role target_player, std::string target_city) {
+  PlayerChoice create_airlift(player::Role role, player::Role target_player, std::string target_city, bool from_contingency_card) {
     PlayerChoice choice;
-    choice.prompt = "Play ";
-    choice.prompt += AIRLIFT;
+    choice.prompt = begin_prompt(AIRLIFT, from_contingency_card);
     choice.prompt += " to move the ";
     choice.prompt += player::name_of(target_player);
     choice.prompt += " to ";
     choice.prompt += target_city;
     choice.prompt += ".";
-    choice.effect = [role, target_player, target_city](Game &game, TurnState &) -> bool {
-      game.discard(game.remove_player_card(role, AIRLIFT));
+    choice.effect = [role, target_player, target_city, from_contingency_card](Game &game, TurnState &) -> bool {
+      move_card(game, role, AIRLIFT, from_contingency_card);
       game.move(target_player, target_city);
       return false;
     };
     return choice;
   }
 
-  void add_choices_for_card_type(std::vector<PlayerChoice> *player_choices, player::Role role, card::CardType type, GameState game_state) {
+  void add_choices_for_card_type(std::vector<PlayerChoice> *player_choices, player::Role role, card::CardType type, GameState game_state, bool from_contingency_card) {
     switch (type)
     {
     case card::one_quiet_night:
-      (*player_choices).push_back(create_one_quiet_night(role));
+      (*player_choices).push_back(create_one_quiet_night(role, from_contingency_card));
       break;
     case card::resilient_population:
       for (int i = 0; i < game_state.infection_deck.get_discard_contents().size(); i++) {
-        (*player_choices).push_back(create_resilient_population(role, game_state.infection_deck.get_discard_contents()[i]));
+        (*player_choices).push_back(create_resilient_population(role, game_state.infection_deck.get_discard_contents()[i], from_contingency_card));
       }
       break;
     case card::government_grant:
       for (std::map<std::string, city::CityState>::iterator cursor = game_state.board.begin(); cursor != game_state.board.end(); cursor++) {
         if (!cursor->second.research_facility) {
-          (*player_choices).push_back(create_government_grant(role, cursor->first));
+          (*player_choices).push_back(create_government_grant(role, cursor->first, from_contingency_card));
         }
       }
       break;
@@ -437,7 +456,7 @@ namespace gerryfudd::core {
       for (std::vector<player::Player>::iterator player_cursor = game_state.players.begin(); player_cursor != game_state.players.end(); player_cursor++) {
         for (std::map<std::string, city::City>::iterator city_cursor = game_state.cities.begin(); city_cursor != game_state.cities.end(); city_cursor++) {
           if (game_state.player_locations[player_cursor->role] != city_cursor->first) {
-            (*player_choices).push_back(create_airlift(role, player_cursor->role, city_cursor->first));
+            (*player_choices).push_back(create_airlift(role, player_cursor->role, city_cursor->first, from_contingency_card));
           }
         }
       }
@@ -445,6 +464,10 @@ namespace gerryfudd::core {
     default:
       break;
     }
+  }
+
+  void add_choices_for_card_type(std::vector<PlayerChoice> *player_choices, player::Role role, card::CardType type, GameState game_state) {
+    add_choices_for_card_type(player_choices, role, type, game_state, false);
   }
 
   std::vector<PlayerChoice> get_player_choices(player::Role role, GameState game_state, TurnState turn_state) {
@@ -456,6 +479,9 @@ namespace gerryfudd::core {
     player::Player player = game_state.get_player(role);
     for (std::vector<card::Card>::iterator cursor = player.hand.contents.begin(); cursor != player.hand.contents.end(); cursor++) {
       add_choices_for_card_type(&result, role, cursor->type, game_state);
+    }
+    if (role == player::contingency_planner && game_state.contingency_card.contents.size() > 0) {
+      add_choices_for_card_type(&result, role, game_state.contingency_card.contents[0].type, game_state, true);
     }
     return result;
   }
