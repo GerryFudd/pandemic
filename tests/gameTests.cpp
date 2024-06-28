@@ -1185,8 +1185,8 @@ TEST(get_player_choice_one_quiet_night) {
 
   Game game{game_state};
   assert_false(choices[0].effect(game, turn_state), "Playing an event card shouldn't win the game.");
-  // assert_equal<int>(game.get_state().get_player(player::dispatcher).hand.contents.size(), 0);
-  // assert_equal(turn_state.remaining_infection_card_draws, 0);
+  assert_equal<int>(game.get_state().get_player(player::dispatcher).hand.contents.size(), 0);
+  assert_equal(turn_state.remaining_infection_card_draws, 0);
 }
 
 TEST(get_player_choice_resilient_population) {
