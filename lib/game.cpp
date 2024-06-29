@@ -470,12 +470,62 @@ namespace gerryfudd::core {
     add_choices_for_card_type(player_choices, role, type, game_state, false);
   }
 
+  PlayerChoice create_drive(player::Role role, std::string target_city) {
+    PlayerChoice choice;
+    choice.prompt = "Drive to ";
+    choice.prompt += target_city;
+    choice.prompt += ".";
+    choice.effect = [role, target_city](Game &game, TurnState&) -> bool {
+      game.move(role, target_city);
+      return false;
+    };
+    return choice;
+  }
+
+  void add_choices_for_action_type(std::vector<PlayerChoice> *player_choices, player::Role role, player::ActionType action_type, GameState game_state) {
+    switch (action_type)
+    {
+    case player::drive:
+        for (auto cursor = game_state.cities[game_state.player_locations[role]].neighbors.begin(); cursor != game_state.cities[game_state.player_locations[role]].neighbors.end(); cursor++) {
+          (*player_choices).push_back(create_drive(role, cursor->name));
+        }
+      break;
+    case player::direct_flight:
+      break;
+    case player::charter_flight:
+      break;
+    case player::shuttle:
+      break;
+    case player::build:
+      break;
+    case player::treat:
+      break;
+    case player::share:
+      break;
+    case player::cure:
+      break;
+    case player::reclaim:
+      break;
+    case player::conference:
+      break;
+    case player::company_plane:
+      break;
+    
+    default:
+      break;
+    }
+  }
+
   std::vector<PlayerChoice> get_player_choices(player::Role role, GameState game_state, TurnState turn_state) {
+    std::vector<PlayerChoice> result;
     if (turn_state.event_cards_played) {
-      return std::vector<PlayerChoice>{};
+      auto actions = player::get_actions(role);
+      for (auto cursor = actions.begin(); cursor != actions.end(); cursor++) {
+        add_choices_for_action_type(&result, role, *cursor, game_state);
+      }
+      return result;
     }
 
-    std::vector<PlayerChoice> result;
     player::Player player = game_state.get_player(role);
     for (std::vector<card::Card>::iterator cursor = player.hand.contents.begin(); cursor != player.hand.contents.end(); cursor++) {
       add_choices_for_card_type(&result, role, cursor->type, game_state);

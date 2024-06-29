@@ -1539,3 +1539,31 @@ TEST(get_player_choice_cp_airlift) {
   assert_equal<int>(game.get_state().contingency_card.contents.size(), 0);
   assert_equal<std::string>(game.get_state().player_locations[player::contingency_planner], "Chicago");
 }
+
+TEST(get_player_actions) {
+  GameState game_state{};
+
+  gerryfudd::data::city::load_cities(&game_state.cities);
+
+  for (std::map<std::string, city::City>::iterator cursor = game_state.cities.begin(); cursor != game_state.cities.end(); cursor++) {
+    game_state.board[cursor->first] = city::CityState{};
+  }
+
+  game_state.players.push_back(player::Player(player::contingency_planner));
+  game_state.player_locations[player::contingency_planner] = CDC_LOCATION;
+
+  TurnState turn_state{player::contingency_planner, game_state.get_infection_rate()};
+  turn_state.event_cards_played = true;
+
+  std::vector<PlayerChoice> choices = get_player_choices(player::contingency_planner, game_state, turn_state);
+  
+  assert_equal<int>(choices.size(), game_state.cities[CDC_LOCATION].neighbors.size());
+  assert_equal<std::string>(choices[0].prompt, "Drive to Chicago.");
+  assert_equal<std::string>(choices[1].prompt, "Drive to Miami.");
+  assert_equal<std::string>(choices[2].prompt, "Drive to Washington.");
+
+  Game game{game_state};
+
+  choices[0].effect(game, turn_state);
+  assert_equal<std::string>(game.get_state().player_locations[player::contingency_planner], "Chicago");
+}
