@@ -2,6 +2,10 @@
 
 This project will implement the boardgame Pandemic in C++. The proof of concept will use text prompts/input as its user interface. This will not ever be used for commercial purposes. It is simply a concrete exercise that I am using to learn the fundamentals of C/C++.
 
+## The status of this project as of June 29
+
+I was adding to this repository regularly in recent weeks because I found it useful to practice writing implementations of various features in c++. There are some concepts related to pointers and memory allocation that I needed to practice to understand. At this point I have spent enough time practicing that I am ready to learn more about standard coding patterns. I am going to return to Kernighan and Ritchie's text on The C Programming Language and finish absorbing that. I will probably then start on Accellerated C++ to learn about standard practices that are more specific to c++ before I return to this project.
+
 ## The repository structure
 
 The implementation of this game exists within the `./include/` and `./lib/` directories. The tests for this code are implemented in the `./tests/` directory. The `./run_tests.sh` script compiles and executes these tests.
